@@ -2,6 +2,24 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 import os
 import shutil
 import uuid
+from flask import send_file
+from config import Config
+
+@admin_bp.route('/admin/download_db')
+@admin_required
+def download_database():
+    """Скачать базу данных (только для админа)"""
+    db_path = Config.DATABASE
+    if os.path.exists(db_path):
+        return send_file(
+            db_path,
+            as_attachment=True,
+            download_name='cloud.db',
+            mimetype='application/x-sqlite3'
+        )
+    else:
+        flash('База данных не найдена', 'error')
+        return redirect(url_for('admin.admin_panel'))
 
 from config import Config
 from utils import (
@@ -183,4 +201,5 @@ def admin_delete_file(file_id):
     update_user_storage(user_id)
 
     flash('Файл удалён', 'success')
+
     return redirect(url_for('admin.admin_user_files', user_id=user_id, folder_id=parent_id))
