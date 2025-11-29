@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block title %}Регистрация - MyCloud{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <div class="auth-logo">
+                <i class="fas fa-cloud"></i>
+            </div>
+            <h1>MyCloud</h1>
+            <p>Создайте новый аккаунт</p>
+        </div>
+
+        <form method="POST" class="auth-form">
+            <div class="form-group">
+                <label for="username">
+                    <i class="fas fa-user"></i> Имя пользователя
+                </label>
+                <input type="text" id="username" name="username" required
+                       placeholder="Введите имя пользователя" minlength="3">
+            </div>
+
+            <div class="form-group">
+                <label for="email">
+                    <i class="fas fa-envelope"></i> Email
+                </label>
+                <input type="email" id="email" name="email" required
+                       placeholder="Введите email">
+            </div>
+
+            <div class="form-group">
+                <label for="password">
+                    <i class="fas fa-lock"></i> Пароль
+                </label>
+                <input type="password" id="password" name="password" required
+                       placeholder="Минимум 6 символов" minlength="6">
+            </div>
+
+            <div class="form-group">
+                <label for="confirm_password">
+                    <i class="fas fa-lock"></i> Подтвердите пароль
+                </label>
+                <input type="password" id="confirm_password" name="confirm_password" required
+                       placeholder="Повторите пароль">
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block">
+                <i class="fas fa-user-plus"></i> Зарегистрироваться
+            </button>
+        </form>
+
+        <div class="auth-footer">
+            <p>Уже есть аккаунт? <a href="{{ url_for('auth.login') }}">Войти</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}
