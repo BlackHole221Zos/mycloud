@@ -1,25 +1,7 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, send_file
 import os
 import shutil
 import uuid
-from flask import send_file
-from config import Config
-
-@admin_bp.route('/admin/download_db')
-@admin_required
-def download_database():
-    """Скачать базу данных (только для админа)"""
-    db_path = Config.DATABASE
-    if os.path.exists(db_path):
-        return send_file(
-            db_path,
-            as_attachment=True,
-            download_name='cloud.db',
-            mimetype='application/x-sqlite3'
-        )
-    else:
-        flash('База данных не найдена', 'error')
-        return redirect(url_for('admin.admin_panel'))
 
 from config import Config
 from utils import (
@@ -29,6 +11,8 @@ from utils import (
 )
 
 admin_bp = Blueprint('admin', __name__)
+
+
 
 
 @admin_bp.route('/admin')
@@ -45,8 +29,25 @@ def admin_panel():
         ORDER BY u.created_at DESC
     ''').fetchall()
     conn.close()
-
+    
     return render_template('admin.html', users=users, format_size=format_size)
+
+
+@admin_bp.route('/admin/download_db')
+@admin_required
+def download_database():
+  
+    db_path = Config.DATABASE
+    if os.path.exists(db_path):
+        return send_file(
+            db_path,
+            as_attachment=True,
+            download_name='cloud.db',
+            mimetype='application/x-sqlite3'
+        )
+    else:
+        flash('База данных не найдена', 'error')
+        return redirect(url_for('admin.admin_panel'))
 
 
 @admin_bp.route('/admin/user/<int:user_id>')
@@ -54,13 +55,13 @@ def admin_panel():
 @admin_required
 def admin_user_files(user_id, folder_id=None):
     conn = get_db()
-
+    
     user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
     if not user:
         flash('Пользователь не найден', 'error')
         conn.close()
         return redirect(url_for('admin.admin_panel'))
-
+    
     if folder_id:
         files = conn.execute('''
             SELECT * FROM files 
@@ -75,7 +76,7 @@ def admin_user_files(user_id, folder_id=None):
             ORDER BY is_folder DESC, original_filename
         ''', (user_id,)).fetchall()
         current_folder = None
-
+    
     breadcrumbs = []
     if folder_id:
         temp_folder_id = folder_id
@@ -86,19 +87,19 @@ def admin_user_files(user_id, folder_id=None):
                 temp_folder_id = folder['parent_id']
             else:
                 break
-
+    
     conn.close()
-
+    
     storage_info = get_user_storage_info(user_id)
-
-    return render_template('admin_user_files.html',
-                           user=user,
-                           files=files,
-                           current_folder=current_folder,
-                           folder_id=folder_id,
-                           breadcrumbs=breadcrumbs,
-                           storage_info=storage_info,
-                           format_size=format_size)
+    
+    return render_template('admin_user_files.html', 
+                         user=user,
+                         files=files, 
+                         current_folder=current_folder,
+                         folder_id=folder_id,
+                         breadcrumbs=breadcrumbs,
+                         storage_info=storage_info,
+                         format_size=format_size)
 
 
 @admin_bp.route('/admin/upload/<int:user_id>', methods=['POST'])
@@ -106,48 +107,48 @@ def admin_user_files(user_id, folder_id=None):
 def admin_upload_file(user_id):
     parent_id = request.form.get('parent_id')
     parent_id = int(parent_id) if parent_id else None
-
+    
     if 'files' not in request.files:
         flash('Файлы не выбраны', 'error')
         return redirect(url_for('admin.admin_user_files', user_id=user_id, folder_id=parent_id))
-
+    
     files = request.files.getlist('files')
     conn = get_db()
-
+    
     if parent_id:
         parent = conn.execute('SELECT file_path FROM files WHERE id = ?', (parent_id,)).fetchone()
         upload_path = parent['file_path']
     else:
         upload_path = str(user_id)
-
+    
     get_user_folder(user_id)
-
+    
     for file in files:
         if file and file.filename:
             file.seek(0, 2)
             file_size = file.tell()
             file.seek(0)
-
+            
             original_filename = safe_filename(file.filename)
             unique_filename = f"{uuid.uuid4()}_{original_filename}"
             file_path = os.path.join(upload_path, unique_filename)
             full_path = os.path.join(Config.UPLOAD_FOLDER, file_path)
-
+            
             os.makedirs(os.path.dirname(full_path), exist_ok=True)
             file.save(full_path)
-
+            
             file_type = get_file_type(original_filename)
-
+            
             conn.execute('''
                 INSERT INTO files (user_id, filename, original_filename, file_path, file_size, file_type, parent_id)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
             ''', (user_id, unique_filename, original_filename, file_path, file_size, file_type, parent_id))
-
+    
     conn.commit()
     conn.close()
-
+    
     update_user_storage(user_id)
-
+    
     flash('Файлы загружены', 'success')
     return redirect(url_for('admin.admin_user_files', user_id=user_id, folder_id=parent_id))
 
@@ -158,19 +159,19 @@ def admin_delete_user(user_id):
     if user_id == session['user_id']:
         flash('Нельзя удалить самого себя', 'error')
         return redirect(url_for('admin.admin_panel'))
-
+    
     conn = get_db()
-
+    
     user_folder = os.path.join(Config.UPLOAD_FOLDER, str(user_id))
     if os.path.exists(user_folder):
         shutil.rmtree(user_folder)
-
+    
     conn.execute('DELETE FROM files WHERE user_id = ?', (user_id,))
     conn.execute('DELETE FROM users WHERE id = ?', (user_id,))
-
+    
     conn.commit()
     conn.close()
-
+    
     flash('Пользователь удалён', 'success')
     return redirect(url_for('admin.admin_panel'))
 
@@ -180,26 +181,25 @@ def admin_delete_user(user_id):
 def admin_delete_file(file_id):
     conn = get_db()
     file = conn.execute('SELECT * FROM files WHERE id = ?', (file_id,)).fetchone()
-
+    
     if not file:
         flash('Файл не найден', 'error')
         conn.close()
         return redirect(url_for('admin.admin_panel'))
-
+    
     user_id = file['user_id']
     parent_id = file['parent_id']
-
+    
     delete_file_from_disk(file['file_path'])
-
+    
     if file['is_folder']:
         delete_folder_contents(conn, file_id)
-
+    
     conn.execute('DELETE FROM files WHERE id = ?', (file_id,))
     conn.commit()
     conn.close()
-
+    
     update_user_storage(user_id)
-
+    
     flash('Файл удалён', 'success')
-
     return redirect(url_for('admin.admin_user_files', user_id=user_id, folder_id=parent_id))
