@@ -7,7 +7,17 @@
         <h1><i class="fas fa-shield-alt"></i> Панель администратора</h1>
         <p>Управление пользователями и их хранилищами</p>
     </div>
-
+<div class="admin-header">
+    <h1><i class="fas fa-shield-alt"></i> Панель администратора</h1>
+    <p>Управление пользователями и их хранилищами</p>
+    
+#СКАЧКА БД
+    <div style="margin-top: 1rem;">
+        <a href="{{ url_for('admin.download_database') }}" class="btn btn-secondary">
+            <i class="fas fa-database"></i> Скачать БД
+        </a>
+    </div>
+</div>
     <div class="stats-cards">
         <div class="stat-card">
             <i class="fas fa-users"></i>
@@ -66,12 +76,12 @@
                     </td>
                     <td>{{ user.created_at[:10] if user.created_at else 'N/A' }}</td>
                     <td>
-                        <!-- ✅ ИСПРАВЛЕНО: admin.admin_user_files -->
+                      
                         <a href="{{ url_for('admin.admin_user_files', user_id=user.id) }}" class="btn btn-sm btn-primary">
                             <i class="fas fa-folder-open"></i> Файлы
                         </a>
                         {% if not user.is_admin %}
-                        <!-- ✅ ИСПРАВЛЕНО: admin.admin_delete_user -->
+                        
                         <form action="{{ url_for('admin.admin_delete_user', user_id=user.id) }}" method="POST" style="display:inline"
                               onsubmit="return confirm('Удалить пользователя {{ user.username }} и все его файлы?')">
                             <button type="submit" class="btn btn-sm btn-danger">
@@ -86,4 +96,5 @@
         </table>
     </div>
 </div>
+
 {% endblock %}
