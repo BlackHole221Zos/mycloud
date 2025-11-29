@@ -11,12 +11,8 @@ from routes.admin import admin_bp
 app = Flask(__name__)
 app.config.from_object(Config)
 
-# Создаём папки
+# Создаём папку uploads
 os.makedirs(Config.UPLOAD_FOLDER, exist_ok=True)
-
-# Инициализация БД при первом запуске
-from init_db import init_database
-init_database()
 
 # Регистрируем Blueprints
 app.register_blueprint(auth_bp)
@@ -24,6 +20,6 @@ app.register_blueprint(files_bp)
 app.register_blueprint(bulk_bp)
 app.register_blueprint(admin_bp)
 
-# ==================== ЗАПУСК ====================
+# Запуск
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
