@@ -60,10 +60,11 @@ def init_database():
     conn.commit()
     conn.close()
 
-    print('✅ База данных создана!')
-    print('👤 Логин: admin')
-    print('🔑 Пароль: admin123')
+    print(' База данных создана!')
+    print('Логин: admin')
+    print(' Пароль: admin123')
 
 
 if __name__ == '__main__':
+
     init_database()
