@@ -15,7 +15,7 @@ MyCloud — Личное облачное хранилище
 
 Установка и запуск
 ```markdown
-git clone https://github.com/ BlackHole221Zos/mycloud.git
+git clone https://github.com/BlackHole221Zos/mycloud.git
 cd mycloud
 ```
 Создаём виртуальное окружение
