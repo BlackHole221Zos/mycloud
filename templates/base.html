@@ -29,6 +29,12 @@
             {% endif %}
         </div>
         <div class="nav-user">
+            
+            <button id="theme-toggle" class="btn btn-icon" title="Сменить тему">
+                <i class="fas fa-moon"></i>
+            </button>
+         
+
             <span class="username">
                 <i class="fas fa-user"></i> {{ session.username }}
                 {% if session.is_admin %}
@@ -59,12 +65,42 @@
     </main>
 
     <script>
+        // Автоскрытие уведомлений
         setTimeout(() => {
             document.querySelectorAll('.alert').forEach(alert => {
                 alert.style.animation = 'slideOut 0.3s ease forwards';
                 setTimeout(() => alert.remove(), 300);
             });
         }, 5000);
+
+        // Логика темной темы
+        const toggleBtn = document.getElementById('theme-toggle');
+        const icon = toggleBtn ? toggleBtn.querySelector('i') : null;
+        const body = document.body;
+
+        // Проверка сохраненной темы
+        const currentTheme = localStorage.getItem('theme');
+        if (currentTheme === 'dark') {
+            body.classList.add('dark-mode');
+            if (icon) icon.classList.replace('fa-moon', 'fa-sun');
+        }
+
+        // Обработчик клика
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', () => {
+                body.classList.toggle('dark-mode');
+                const isDark = body.classList.contains('dark-mode');
+
+                // Меняем иконку
+                if (isDark) {
+                    icon.classList.replace('fa-moon', 'fa-sun');
+                    localStorage.setItem('theme', 'dark');
+                } else {
+                    icon.classList.replace('fa-sun', 'fa-moon');
+                    localStorage.setItem('theme', 'light');
+                }
+            });
+        }
     </script>
     {% block scripts %}{% endblock %}
 </body>
