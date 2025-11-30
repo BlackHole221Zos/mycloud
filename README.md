@@ -24,11 +24,13 @@ source .venv/bin/activate          # Windows: .venv\Scripts\activate
 Устанавливаем зависимости
 ```markdown
 pip install Flask
-
+```
 Создаём базу данных и админа
+```markdown
 python init_db.py
-
-# Запускаем сервер
+```
+Запускаем сервер
+```markdown
 python app.py
 ```
 
