@@ -1,4 +1,4 @@
-/* ==================== ПЕРЕМЕННЫЕ ==================== */
+/* ПЕРЕМЕННЫЕ */
 :root {
     --primary: #6366f1;
     --primary-dark: #4f46e5;
@@ -34,7 +34,7 @@ body {
     min-height: 100vh;
 }
 
-/* ==================== НАВИГАЦИЯ ==================== */
+/* НАВИГАЦИЯ */
 .navbar {
     background: white;
     padding: 0.75rem 2rem;
@@ -113,7 +113,7 @@ body {
     font-weight: 600;
 }
 
-/* ==================== КНОПКИ ==================== */
+/* КНОПКИ */
 .btn {
     display: inline-flex;
     align-items: center;
@@ -232,14 +232,14 @@ body {
     font-size: 0.75rem;
 }
 
-/* ==================== КОНТЕЙНЕР ==================== */
+/* КОНТЕЙНЕР */
 .container {
     max-width: 1400px;
     margin: 0 auto;
     padding: 1.5rem;
 }
 
-/* ==================== УВЕДОМЛЕНИЯ ==================== */
+/* УВЕДОМЛЕНИЯ */
 .alert {
     display: flex;
     align-items: center;
@@ -291,7 +291,7 @@ body {
     opacity: 1;
 }
 
-/* ==================== АВТОРИЗАЦИЯ ==================== */
+/* АВТОРИЗАЦИЯ */
 .auth-container {
     min-height: 100vh;
     display: flex;
@@ -394,7 +394,7 @@ body {
     text-decoration: underline;
 }
 
-/* ==================== ДАШБОРД ==================== */
+/* ДАШБОРД */
 .dashboard {
     display: grid;
     grid-template-columns: 240px 1fr;
@@ -402,7 +402,7 @@ body {
     min-height: calc(100vh - 100px);
 }
 
-/* ==================== КОМПАКТНЫЙ САЙДБАР ==================== */
+/* КОМПАКТНЫЙ САЙДБАР */
 .sidebar {
     background: white;
     border-radius: var(--radius);
@@ -496,7 +496,7 @@ body {
     font-size: 0.75rem;
 }
 
-/* ==================== КОНТЕНТ ==================== */
+/* КОНТЕНТ */
 .main-content {
     background: white;
     border-radius: var(--radius);
@@ -552,14 +552,14 @@ body {
     font-size: 0.875rem;
 }
 
-/* ==================== СЕТКА ФАЙЛОВ ==================== */
+/* СЕТКА ФАЙЛОВ */
 .files-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 1rem;
 }
 
-/* ==================== КАРТОЧКА ФАЙЛА ==================== */
+/* КАРТОЧКА ФАЙЛА */
 .file-card {
     background: white;
     border: 2px solid var(--gray-200);
@@ -588,7 +588,7 @@ body {
     opacity: 0.8;
 }
 
-/* ==================== ЧЕКБОКС НА КАРТОЧКЕ ==================== */
+/* ЧЕКБОКС НА КАРТОЧКЕ */
 .file-checkbox-wrapper {
     position: absolute;
     top: 10px;
@@ -672,7 +672,7 @@ body {
     transform: none;
 }
 
-/* ==================== ИКОНКА ФАЙЛА ==================== */
+/* ИКОНКА ФАЙЛА */
 .file-icon {
     width: 60px;
     height: 60px;
@@ -698,7 +698,7 @@ body {
 .file-icon .fa-file-archive { color: #f59e0b; }
 .file-icon .fa-code { color: #10b981; }
 
-/* ==================== ИНФОРМАЦИЯ О ФАЙЛЕ ==================== */
+/* ИНФОРМАЦИЯ О ФАЙЛЕ */
 .file-info {
     width: 100%;
     margin-bottom: 0.75rem;
@@ -740,7 +740,7 @@ body {
     font-size: 0.6rem;
 }
 
-/* ==================== ДЕЙСТВИЯ С ФАЙЛОМ ==================== */
+/* ДЕЙСТВИЯ С ФАЙЛОМ */
 .file-actions {
     display: flex;
     gap: 0.4rem;
@@ -748,7 +748,7 @@ body {
     margin-top: auto;
 }
 
-/* ==================== ПУСТОЕ СОСТОЯНИЕ ==================== */
+/* ПУСТОЕ СОСТОЯНИЕ */
 .empty-state {
     text-align: center;
     padding: 4rem 2rem;
@@ -771,7 +771,7 @@ body {
     color: var(--gray-400);
 }
 
-/* ==================== МОДАЛЬНЫЕ ОКНА ==================== */
+/* МОДАЛЬНЫЕ ОКНА */
 .modal {
     position: fixed;
     top: 0;
@@ -839,7 +839,7 @@ body {
     color: var(--gray-600);
 }
 
-/* ==================== ЗАГРУЗКА ==================== */
+/* ЗАГРУЗКА */
 .upload-area {
     border: 2px dashed var(--gray-300);
     border-radius: var(--radius);
@@ -904,7 +904,7 @@ body {
     font-size: 0.7rem;
 }
 
-/* ==================== УДАЛЕНИЕ ==================== */
+/* УДАЛЕНИЕ */
 .delete-text {
     text-align: center;
     margin-bottom: 1.5rem;
@@ -917,7 +917,7 @@ body {
     gap: 0.5rem;
 }
 
-/* ==================== ПАНЕЛЬ МАССОВЫХ ДЕЙСТВИЙ ==================== */
+/* ПАНЕЛЬ МАССОВЫХ ДЕЙСТВИЙ */
 .bulk-actions {
     display: flex;
     align-items: center;
@@ -973,7 +973,7 @@ body {
     border-color: transparent;
 }
 
-/* ==================== АДМИН-ПАНЕЛЬ ==================== */
+/* АДМИН-ПАНЕЛЬ */
 .admin-panel {
     padding: 1rem;
 }
@@ -1143,7 +1143,7 @@ body {
     font-size: 0.75rem;
 }
 
-/* ==================== СКРОЛЛБАР ==================== */
+/* СКРОЛЛБАР */
 ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -1163,8 +1163,7 @@ body {
     background: var(--gray-400);
 }
 
-/* ==================== АДАПТИВНОСТЬ ==================== */
-
+/*АДАПТИВНОСТЬ
 /* Планшеты */
 @media (max-width: 1024px) {
     .dashboard {
@@ -1535,4 +1534,164 @@ body {
     .btn-primary:hover {
         transform: none;
     }
+}
+/* ТЕМНАЯ ТЕМА */
+
+
+body.dark-mode {
+    --bg-body: #0f172a;       
+    --bg-surface: #1e293b;    
+    --bg-hover: #334155;      
+    --text-main: #f8fafc;     
+    --text-muted: #94a3b8;    
+    --border: #334155;        
+
+
+    background-color: var(--bg-body);
+    color: var(--text-main);
+}
+
+body.dark-mode .navbar,
+body.dark-mode .sidebar,
+body.dark-mode .main-content,
+body.dark-mode .file-card,
+body.dark-mode .stat-card,
+body.dark-mode .modal-content,
+body.dark-mode .auth-card,
+body.dark-mode .users-table-container {
+    background-color: var(--bg-surface);
+    border-color: var(--border);
+    color: var(--text-main);
+}
+
+/* Перекрашиваем текст */
+body.dark-mode h1,
+body.dark-mode h2,
+body.dark-mode h3,
+body.dark-mode .nav-brand,
+body.dark-mode .file-name,
+body.dark-mode .username {
+    color: var(--text-main);
+}
+
+body.dark-mode p,
+body.dark-mode .file-meta,
+body.dark-mode .storage-text,
+body.dark-mode .nav-link {
+    color: var(--text-muted);
+}
+
+/* Навигация */
+body.dark-mode .nav-link:hover,
+body.dark-mode .btn-icon:hover {
+    background-color: var(--bg-hover);
+    color: var(--primary);
+}
+
+/* Кнопки и иконки */
+body.dark-mode .btn-secondary {
+    background-color: var(--bg-hover);
+    color: var(--text-main);
+    border-color: var(--border);
+}
+
+body.dark-mode .btn-secondary:hover {
+    background-color: var(--border);
+}
+
+body.dark-mode .btn-icon {
+    background-color: var(--bg-hover);
+    color: var(--text-muted);
+}
+
+/* Файлы */
+body.dark-mode .file-card {
+    background-color: var(--bg-surface);
+    border-color: var(--border);
+}
+
+body.dark-mode .file-card:hover {
+    background-color: var(--bg-hover);
+    border-color: var(--primary);
+}
+
+body.dark-mode .file-icon {
+    background-color: var(--bg-body);
+}
+
+body.dark-mode .file-card.folder .file-icon {
+    background-color: rgba(251, 191, 36, 0.1); /* Полупрозрачный желтый */
+}
+
+/* Таблицы и списки */
+body.dark-mode .users-table th,
+body.dark-mode .users-table td,
+body.dark-mode .breadcrumbs,
+body.dark-mode .user-info-card {
+    border-bottom-color: var(--border);
+}
+
+body.dark-mode .users-table tr:hover,
+body.dark-mode .file-list-item {
+    background-color: var(--bg-hover);
+}
+
+body.dark-mode .user-info-card {
+    border-bottom-color: var(--border);
+}
+
+body.dark-mode input {
+    background-color: var(--bg-body);
+    border-color: var(--border);
+    color: var(--text-main);
+}
+
+body.dark-mode input:focus {
+    border-color: var(--primary);
+}
+
+body.dark-mode .upload-area {
+    border-color: var(--border);
+}
+
+body.dark-mode .upload-area:hover {
+    background-color: var(--bg-hover);
+    border-color: var(--primary);
+}
+
+body.dark-mode .checkmark {
+    background-color: var(--bg-body);
+    border-color: var(--border);
+}
+
+body.dark-mode .select-all-wrapper:hover .checkmark,
+body.dark-mode .file-checkbox-wrapper:hover .checkmark {
+    border-color: var(--primary);
+}
+
+body.dark-mode ::-webkit-scrollbar-track {
+    background: var(--bg-body);
+}
+
+body.dark-mode ::-webkit-scrollbar-thumb {
+    background: var(--bg-hover);
+}
+
+body.dark-mode ::-webkit-scrollbar-thumb:hover {
+    background: var(--border);
+}
+
+body.dark-mode .storage-bar,
+body.dark-mode .mini-bar {
+    background-color: var(--bg-body);
+}
+
+
+body.dark-mode .modal {
+    background: rgba(0, 0, 0, 0.7);
+}
+
+body.dark-mode .modal-close:hover {
+    background-color: var(--bg-hover);
+    color: var(--text-main);
 }
