@@ -15,8 +15,6 @@
 
 
 ## Установка и запуск
-
-```bash
 git clone https://github.com/ BlackHole221Zos/mycloud.git
 cd mycloud
 
