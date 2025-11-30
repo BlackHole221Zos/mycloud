@@ -1,22 +1,16 @@
 import sqlite3
 import os
 from werkzeug.security import generate_password_hash
-
+from config import Config  
 
 def init_database():
-    """Создание базы данных и таблиц"""
-    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    DB_PATH = os.path.join(BASE_DIR, 'cloud.db')
+    db_path = Config.DATABASE
+    print(f" Настройка базы данных: {db_path}")
 
-    # Если база уже есть - не трогаем
-    if os.path.exists(DB_PATH):
-        print('✅ База данных уже существует')
-        return
-
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
 
-    # Создаём таблицу пользователей
+    # 1. Таблица пользователей
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -30,7 +24,7 @@ def init_database():
         )
     ''')
 
-    # Создаём таблицу файлов
+    # 2. Таблица файлов
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS files (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -50,20 +44,24 @@ def init_database():
         )
     ''')
 
-    # Создаём админа
-    hashed = generate_password_hash('admin123')
-    cursor.execute('''
-        INSERT INTO users (username, email, password, is_admin)
-        VALUES (?, ?, ?, 1)
-    ''', ('admin', 'admin@mycloud.com', hashed))
+    # 3. Создаем админа
+    try:
+        cursor.execute('SELECT id FROM users WHERE username = ?', ('admin',))
+        if not cursor.fetchone():
+            hashed = generate_password_hash('admin123')
+            cursor.execute('''
+                INSERT INTO users (username, email, password, is_admin) 
+                VALUES (?, ?, ?, 1)
+            ''', ('admin', 'admin@mycloud.com', hashed))
+            print(" Пользователь 'admin' создан.")
+        else:
+            print(" Пользователь 'admin' уже существует.")
+    except Exception as e:
+        print(f"Ошибка создания админа: {e}")
 
     conn.commit()
     conn.close()
-
-    print('✅ База данных создана!')
-    print('👤 Логин: admin')
-    print('🔑 Пароль: admin123')
-
+    print(" База данных успешно инициализирована!")
 
 if __name__ == '__main__':
     init_database()
