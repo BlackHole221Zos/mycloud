@@ -33,7 +33,7 @@ python init_db.py
 ```markdown
 python app.py
 ```
-
+Структура проекта
 ```markdown
 MyCloud/
 ├── app.py              — запуск приложения
