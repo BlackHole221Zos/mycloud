@@ -14,13 +14,15 @@ MyCloud — Личное облачное хранилище
 
 
 Установка и запуск
+```markdown
 git clone https://github.com/ BlackHole221Zos/mycloud.git
 cd mycloud
-
+```
 Создаём виртуальное окружение
+```markdown
 python -m venv .venv
-source .venv/bin/activate          # Windows: .venv\Scripts\activate
-
+.venv\Scripts\activate
+```
 Устанавливаем зависимости
 ```markdown
 pip install Flask
