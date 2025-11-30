@@ -1,0 +1,215 @@
+{% extends 'base.html' %}
+{% block title %}Корзина - MyCloud{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <aside class="sidebar">
+        <div class="storage-info">
+            <h3><i class="fas fa-database"></i> Хранилище</h3>
+            <div class="storage-bar">
+                <div class="storage-used-active" style="width: {{ storage_info.percent_active if storage_info else 0 }}%"></div>
+                <div class="storage-used-trash" style="width: {{ storage_info.percent_trash if storage_info else 0 }}%"></div>
+            </div>
+            <p class="storage-text">
+                {% if storage_info %}
+                    {{ storage_info.used_formatted }} из {{ storage_info.limit_formatted }}
+                    <span class="storage-percent">({{ storage_info.percent }}%)</span>
+                {% else %}
+                    0 Б из 3.00 ГБ
+                {% endif %}
+            </p>
+            {% if storage_info and storage_info.trash > 0 %}
+            <p class="storage-trash-info">
+                <i class="fas fa-trash"></i> В корзине: {{ storage_info.trash_formatted }}
+                <span class="trash-hint">(очистите для освобождения)</span>
+            </p>
+            {% endif %}
+        </div>
+
+        <div class="quick-actions">
+            {% if files %}
+            <form action="{{ url_for('files.empty_trash') }}" method="POST" style="width: 100%;"
+                  onsubmit="return confirm('Очистить корзину навсегда?')">
+                <button type="submit" class="btn btn-danger btn-block">
+                    <i class="fas fa-trash"></i> <span>Очистить</span>
+                </button>
+            </form>
+            {% endif %}
+            <a href="{{ url_for('files.dashboard') }}" class="btn btn-secondary btn-block">
+                <i class="fas fa-arrow-left"></i> <span>Назад</span>
+            </a>
+        </div>
+    </aside>
+
+    <div class="main-content">
+        <div class="breadcrumbs">
+            <a href="{{ url_for('files.dashboard') }}"><i class="fas fa-home"></i> Мои файлы</a>
+            <span class="separator">/</span>
+            <span><i class="fas fa-trash"></i> Корзина</span>
+        </div>
+
+        <!-- Панель массовых действий -->
+        <div class="bulk-actions" id="bulkActions" style="display: none;">
+            <div class="bulk-info">
+                <span id="selectedCount">0</span> выбрано
+            </div>
+            <div class="bulk-buttons">
+                <button class="btn btn-success btn-sm" onclick="bulkRestore()">
+                    <i class="fas fa-undo"></i> <span>Восстановить</span>
+                </button>
+                <button class="btn btn-danger btn-sm" onclick="bulkDeletePermanent()">
+                    <i class="fas fa-times"></i> <span>Удалить</span>
+                </button>
+                <button class="btn btn-secondary btn-sm" onclick="clearSelection()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="files-header">
+            <div class="files-header-left">
+                {% if files %}
+                <label class="select-all-wrapper">
+                    <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                    <span class="checkmark"></span>
+                </label>
+                {% endif %}
+                <h2><i class="fas fa-trash"></i> Корзина</h2>
+            </div>
+            <span class="files-count">{{ files|length }} элементов</span>
+        </div>
+
+        {% if files %}
+        <div class="files-grid">
+            {% for file in files %}
+            <div class="file-card deleted {% if file.is_folder %}folder{% endif %}" data-id="{{ file.id }}">
+                <label class="file-checkbox-wrapper" onclick="event.stopPropagation();">
+                    <input type="checkbox" class="file-checkbox" value="{{ file.id }}" onchange="updateSelection()">
+                    <span class="checkmark"></span>
+                </label>
+
+                <div class="file-icon">
+                    {% if file.is_folder %}
+                    <i class="fas fa-folder"></i>
+                    {% elif file.file_type == 'image' %}
+                    <i class="fas fa-image"></i>
+                    {% elif file.file_type == 'video' %}
+                    <i class="fas fa-video"></i>
+                    {% elif file.file_type == 'audio' %}
+                    <i class="fas fa-music"></i>
+                    {% elif file.file_type == 'document' %}
+                    <i class="fas fa-file-alt"></i>
+                    {% elif file.file_type == 'archive' %}
+                    <i class="fas fa-file-archive"></i>
+                    {% else %}
+                    <i class="fas fa-file"></i>
+                    {% endif %}
+                </div>
+
+                <div class="file-info">
+                    <h3 class="file-name" title="{{ file.original_filename }}">{{ file.original_filename }}</h3>
+                    <p class="file-meta">
+                        {% if not file.is_folder %}{{ format_size(file.file_size) }}{% endif %}
+                    </p>
+                    <p class="deleted-date">
+                        <i class="fas fa-clock"></i> {{ file.deleted_at[:10] if file.deleted_at else '' }}
+                    </p>
+                </div>
+
+                <div class="file-actions">
+                    <form action="{{ url_for('files.restore_file', file_id=file.id) }}" method="POST" style="display:inline">
+                        <button type="submit" class="btn btn-icon btn-success" title="Восстановить">
+                            <i class="fas fa-undo"></i>
+                        </button>
+                    </form>
+                    <form action="{{ url_for('files.delete_file', file_id=file.id) }}" method="POST" style="display:inline"
+                          onsubmit="return confirm('Удалить навсегда?')">
+                        <input type="hidden" name="delete_type" value="permanent">
+                        <button type="submit" class="btn btn-icon btn-danger" title="Удалить навсегда">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-trash-alt"></i>
+            <h3>Корзина пуста</h3>
+            <p>Удалённые файлы появятся здесь</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Скрытые формы -->
+<form id="bulkRestoreForm" action="{{ url_for('bulk.bulk_restore') }}" method="POST" style="display:none;">
+    <div id="bulkRestoreFiles"></div>
+</form>
+
+<form id="bulkDeleteForm" action="{{ url_for('bulk.bulk_delete') }}" method="POST" style="display:none;">
+    <input type="hidden" name="delete_type" value="permanent">
+    <input type="hidden" name="redirect_url" value="{{ url_for('files.trash') }}">
+    <div id="bulkDeleteFiles"></div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function updateSelection() {
+    const checkboxes = document.querySelectorAll('.file-checkbox:checked');
+    const count = checkboxes.length;
+    document.getElementById('selectedCount').textContent = count;
+    document.getElementById('bulkActions').style.display = count > 0 ? 'flex' : 'none';
+
+    const selectAll = document.getElementById('selectAll');
+    const allCheckboxes = document.querySelectorAll('.file-checkbox');
+    if (selectAll) {
+        selectAll.checked = allCheckboxes.length > 0 && count === allCheckboxes.length;
+        selectAll.indeterminate = count > 0 && count < allCheckboxes.length;
+    }
+
+    document.querySelectorAll('.file-card').forEach(card => {
+        const checkbox = card.querySelector('.file-checkbox');
+        card.classList.toggle('selected', checkbox && checkbox.checked);
+    });
+}
+
+function toggleSelectAll() {
+    const selectAll = document.getElementById('selectAll');
+    document.querySelectorAll('.file-checkbox').forEach(cb => cb.checked = selectAll.checked);
+    updateSelection();
+}
+
+function clearSelection() {
+    document.querySelectorAll('.file-checkbox').forEach(cb => cb.checked = false);
+    const selectAll = document.getElementById('selectAll');
+    if (selectAll) selectAll.checked = false;
+    updateSelection();
+}
+
+function getSelectedIds() {
+    return Array.from(document.querySelectorAll('.file-checkbox:checked')).map(cb => cb.value);
+}
+
+function bulkRestore() {
+    const ids = getSelectedIds();
+    if (ids.length === 0) return alert('Выберите файлы');
+
+    const container = document.getElementById('bulkRestoreFiles');
+    container.innerHTML = ids.map(id => `<input type="hidden" name="file_ids" value="${id}">`).join('');
+    document.getElementById('bulkRestoreForm').submit();
+}
+
+function bulkDeletePermanent() {
+    const ids = getSelectedIds();
+    if (ids.length === 0) return alert('Выберите файлы');
+    if (!confirm(`Удалить навсегда ${ids.length} файл(ов)?`)) return;
+
+    const container = document.getElementById('bulkDeleteFiles');
+    container.innerHTML = ids.map(id => `<input type="hidden" name="file_ids" value="${id}">`).join('');
+    document.getElementById('bulkDeleteForm').submit();
+}
+</script>
+{% endblock %}
