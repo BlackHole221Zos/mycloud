@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block title %}Приглашение в группу{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card" style="text-align: center;">
+        <div class="auth-header">
+            <div class="auth-logo" style="background: var(--primary); color: white;">
+                <i class="fas fa-envelope-open-text"></i>
+            </div>
+            <h1>Приглашение</h1>
+            <p>Вас приглашают вступить в группу:</p>
+            <h2 style="color: var(--primary); margin: 0.5rem 0;">{{ group.name }}</h2>
+        </div>
+
+        <!-- Блок выбора: Принять или Отклонить -->
+        <div id="decision-block">
+            <p style="margin-bottom: 1.5rem; color: var(--gray-500);">Хотите присоединиться?</p>
+            <div style="display: flex; gap: 1rem; justify-content: center;">
+                <a href="{{ url_for('groups.join_via_link', token=group.invite_token, action='decline') }}" class="btn btn-secondary btn-block">
+                    Отклонить
+                </a>
+                <button onclick="showPinInput()" class="btn btn-primary btn-block">
+                    Принять
+                </button>
+            </div>
+        </div>
+
+        <!-- Блок ввода пин-кода (скрыт по умолчанию) -->
+        <div id="pin-block" style="display: none; margin-top: 1rem;">
+            <form method="POST" class="auth-form">
+                <div class="form-group">
+                    <label for="pincode" style="justify-content: center;">Введите ПИН-код для подтверждения</label>
+                    <input type="text" id="pincode" name="pincode" required
+                           placeholder="000000"
+                           style="text-align: center; letter-spacing: 5px; font-size: 1.5rem; font-weight: bold;"
+                           inputmode="numeric" pattern="[0-9]*" autocomplete="off">
+                </div>
+
+                <button type="submit" class="btn btn-success btn-block">
+                    <i class="fas fa-check"></i> Подтвердить вход
+                </button>
+                <button type="button" onclick="hidePinInput()" class="btn btn-link" style="margin-top: 0.5rem; color: var(--gray-500); background: none; border: none; cursor: pointer;">
+                    Назад
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function showPinInput() {
+    document.getElementById('decision-block').style.display = 'none';
+    document.getElementById('pin-block').style.display = 'block';
+    document.getElementById('pincode').focus();
+}
+
+function hidePinInput() {
+    document.getElementById('pin-block').style.display = 'none';
+    document.getElementById('decision-block').style.display = 'block';
+}
+</script>
+{% endblock %}

@@ -1,0 +1,177 @@
+{% extends 'base.html' %}
+{% block title %}{{ group.name }}{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <aside class="sidebar">
+        <h4>{{ group.name }}</h4>
+
+        {% if storage_info %}
+        <div class="storage-info" style="margin-top: 1rem;">
+            <div class="storage-bar"><div class="storage-used-active" style="width: {{ storage_info.percent }}%"></div></div>
+            <p class="storage-text">{{ storage_info.used_formatted }} / {{ storage_info.limit_formatted }}</p>
+        </div>
+        {% endif %}
+
+        <div class="quick-actions" style="margin-top: 1rem;">
+            <button class="btn btn-primary btn-block" onclick="document.getElementById('uploadModal').classList.add('active')">Загрузить</button>
+            <button class="btn btn-secondary btn-block" onclick="document.getElementById('folderModal').classList.add('active')">Создать папку</button>
+            <a href="{{ url_for('groups.group_trash', group_id=group.id) }}" class="btn btn-warning btn-block" style="margin-top: 0.5rem;">Корзина</a>
+        </div>
+
+        <hr style="margin: 1rem 0; opacity: 0.5;">
+        <h5>Участники ({{ members|length }})</h5>
+        <ul class="member-list">
+            {% for m in members %}<li><i class="fas fa-user"></i> {{ m.username }} {% if m.id == group.owner_id %}👑{% endif %}</li>{% endfor %}
+        </ul>
+
+        <hr style="margin: 1.5rem 0 1rem; opacity: 0.5;">
+        <h5>Пригласить (нужно прежде нажать Сбросить)</h5>
+
+        <!-- БЛОК ПРИГЛАШЕНИЯ -->
+        <div class="invite-card">
+            <div id="invite-box" style="display: {% if invite_link %}block{% else %}none{% endif %};">
+                <div class="invite-input-group">
+                    <input type="text" id="inv-link" value="{{ invite_link or '' }}" readonly>
+                    <button class="btn btn-secondary" onclick="copyToClipboard('#inv-link')"><i class="fas fa-copy"></i></button>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                <button id="gen-btn" class="btn btn-secondary btn-block">{% if invite_link %}Сбросить{% else %}Создать{% endif %}</button>
+                <button id="qr-btn" class="btn btn-secondary" onclick="showQRCode(document.getElementById('inv-link').value)" style="display: {% if invite_link %}inline-flex{% else %}none{% endif %}; padding: 0 0.8rem;"><i class="fas fa-qrcode"></i></button>
+            </div>
+
+            <!-- ПИН КОД -->
+            <div id="pin-box" class="pin-display-box" style="display: none;">
+                <span class="invite-label">Пин-код</span>
+                <span class="pin-code-text" id="pin-text"></span>
+                <div class="pin-actions">
+                    <button class="btn btn-sm btn-success" onclick="copyText(document.getElementById('pin-text').innerText, this)">Копировать</button>
+                    <button class="btn btn-sm btn-secondary" onclick="document.getElementById('pin-box').style.display='none'">Скрыть</button>
+                </div>
+                <p class="invite-info-text">Сохраните код!</p>
+            </div>
+        </div>
+
+        <div style="margin-top: 2rem;">
+            {% if session.user_id == group.owner_id %}
+            <form action="{{ url_for('groups.delete_group', group_id=group.id) }}" method="POST" onsubmit="return confirm('Удалить?')"><button class="btn btn-danger btn-block btn-sm">Удалить группу</button></form>
+            {% else %}
+            <form action="{{ url_for('groups.leave_group', group_id=group.id) }}" method="POST" onsubmit="return confirm('Выйти?')"><button class="btn btn-warning btn-block btn-sm">Выйти</button></form>
+            {% endif %}
+        </div>
+    </aside>
+
+    <div class="main-content">
+        <div class="breadcrumbs"><a href="{{ url_for('groups.list_groups') }}">Группы</a> / {{ group.name }}</div>
+
+        <!-- СПИСОК ФАЙЛОВ -->
+        <div class="files-grid" id="fileContainer">
+            {% for f in files %}
+            <div class="file-card {% if f.is_folder %}folder{% endif %}">
+                <div class="file-icon">{% if f.is_folder %}<i class="fas fa-folder"></i>{% else %}<i class="fas fa-file"></i>{% endif %}</div>
+                <div class="file-info"><h3 class="file-name">{{ f.original_filename }}</h3></div>
+                <div class="file-actions">
+                    {% if f.is_folder %}<a href="{{ url_for('groups.view_group', group_id=group.id, folder_id=f.id) }}" class="btn btn-icon"><i class="fas fa-folder-open"></i></a>{% endif %}
+                    <form action="{{ url_for('groups.delete_group_file', file_id=f.id) }}" method="POST" onsubmit="return confirm('Удалить?')"><button class="btn btn-icon btn-danger"><i class="fas fa-trash"></i></button></form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- МОДАЛКИ -->
+<div id="uploadModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header"><h2>Загрузка</h2><button class="modal-close" onclick="this.closest('.modal').classList.remove('active')">×</button></div>
+        <form action="{{ url_for('groups.upload_group_file', group_id=group.id) }}" method="POST" enctype="multipart/form-data" id="upForm">
+            <input type="hidden" name="parent_id" value="{{ current_folder.id if current_folder else '' }}">
+            <div class="upload-area" onclick="document.getElementById('fInp').click()"><p>Выбрать файлы</p><input type="file" name="files" id="fInp" multiple style="display:none"></div>
+            <div id="fList" class="file-list"></div>
+
+            <div id="progressContainer" class="upload-progress-container" style="display: none;">
+                <div class="progress-bar-wrapper"><div id="progressBar" class="progress-bar-fill active" style="width: 0%;"></div></div>
+                <div class="progress-text"><span id="progressPercent">0%</span></div>
+            </div>
+
+            <button type="button" onclick="startUp()" class="btn btn-primary btn-block" id="upBtn" style="display:none;margin-top:1rem;">Загрузить</button>
+        </form>
+    </div>
+</div>
+
+<div id="folderModal" class="modal"><div class="modal-content"><div class="modal-header"><h2>Папка</h2><button class="modal-close" onclick="this.closest('.modal').classList.remove('active')">×</button></div><form action="{{ url_for('groups.create_group_folder', group_id=group.id) }}" method="POST"><input type="hidden" name="parent_id" value="{{ current_folder.id if current_folder else '' }}"><input type="text" name="folder_name" required class="form-control"><button class="btn btn-primary btn-block" style="margin-top:1rem;">Создать</button></form></div></div>
+<div id="qrModal" class="modal"><div class="modal-content" style="text-align:center"><div id="qrcode" style="margin:1rem auto; display:flex; justify-content:center;"></div></div></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // 1. ЗАГРУЗКА
+    const fInp = document.getElementById('fInp');
+    const upBtn = document.getElementById('upBtn');
+    const fList = document.getElementById('fList');
+    const upForm = document.getElementById('upForm');
+
+    if(fInp) {
+        fInp.addEventListener('change', function() {
+            fList.innerHTML = '';
+            if(this.files.length) {
+                for(let f of this.files) fList.innerHTML+=`<div>${f.name}</div>`;
+                upBtn.style.display = 'block';
+            } else upBtn.style.display = 'none';
+        });
+    }
+
+    function startUp() {
+        if(!fInp.files.length) return alert('Файлы не выбраны');
+
+        const fd = new FormData(upForm);
+        const xhr = new XMLHttpRequest();
+        document.getElementById('progressContainer').style.display = 'block';
+        upBtn.disabled = true;
+
+        xhr.upload.onprogress = function(evt) {
+            if(evt.lengthComputable) {
+                const p = Math.round((evt.loaded/evt.total)*100);
+                document.getElementById('progressBar').style.width = p+'%';
+                document.getElementById('progressPercent').textContent = p+'%';
+            }
+        };
+        xhr.onload = function() { window.location.reload(); };
+        xhr.open('POST', upForm.action, true);
+        xhr.send(fd);
+    }
+
+    // 2. ПРИГЛАШЕНИЯ
+    document.getElementById('gen-btn')?.addEventListener('click', async function() {
+        const btn = this; btn.disabled = true;
+        try {
+            const res = await fetch("{{ url_for('groups.manage_invite_link', group_id=group.id) }}", {method:'POST'});
+            const data = await res.json();
+            if(data.success) {
+                document.getElementById('invite-box').style.display = 'block';
+                document.getElementById('inv-link').value = data.invite_link;
+                document.getElementById('pin-box').style.display = 'block';
+                document.getElementById('pin-text').textContent = data.pincode;
+                btn.innerHTML = 'Сбросить';
+                const qr = document.getElementById('qr-btn');
+                if(qr) qr.style.display = 'inline-flex';
+            }
+        } catch(e) { alert('Ошибка'); }
+        btn.disabled = false;
+    });
+
+    function showQRCode(url) {
+        document.getElementById('qrcode').innerHTML = '';
+        if(url.startsWith('/')) url = window.location.origin + url;
+        new QRCode(document.getElementById('qrcode'), { text: url, width: 200, height: 200 });
+        document.getElementById('qrModal').classList.add('active');
+    }
+
+    function copyToClipboard(sel) { document.querySelector(sel).select(); document.execCommand('copy'); alert('Скопировано'); }
+    function copyText(txt, btn) { const t=document.createElement("input");t.value=txt;document.body.appendChild(t);t.select();document.execCommand("copy");document.body.removeChild(t); alert("Скопировано"); }
+
+    document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', e => { if(e.target === m) m.classList.remove('active'); }));
+</script>
+{% endblock %}

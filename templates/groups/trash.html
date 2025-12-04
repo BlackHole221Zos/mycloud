@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block title %}Корзина: {{ group.name }}{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <aside class="sidebar">
+        <h4><i class="fas fa-trash"></i> Корзина группы</h4>
+
+        {% if storage_info %}
+        <div class="storage-info" style="margin-top: 1rem;">
+            <div class="storage-bar"><div class="storage-used-trash" style="width: {{ storage_info.percent }}%"></div></div>
+            <p class="storage-text">{{ storage_info.used_formatted }} / {{ storage_info.limit_formatted }}</p>
+        </div>
+        {% endif %}
+
+        <div class="quick-actions" style="margin-top: 1rem;">
+            {% if files %}
+            <form action="{{ url_for('groups.empty_group_trash', group_id=group.id) }}" method="POST" onsubmit="return confirm('Удалить ВСЕ файлы навсегда? Это освободит место.')">
+                <button class="btn btn-danger btn-block">Очистить корзину</button>
+            </form>
+            {% endif %}
+            <a href="{{ url_for('groups.view_group', group_id=group.id) }}" class="btn btn-secondary btn-block">Назад в группу</a>
+        </div>
+    </aside>
+
+    <div class="main-content">
+        <div class="breadcrumbs">
+            <a href="{{ url_for('groups.list_groups') }}">Группы</a> /
+            <a href="{{ url_for('groups.view_group', group_id=group.id) }}">{{ group.name }}</a> /
+            Корзина
+        </div>
+
+        <div class="files-header">
+            <div class="files-header-left"><h2>Удаленные файлы</h2></div>
+            <span class="files-count">{{ files|length }} элементов</span>
+        </div>
+
+        {% if files %}
+        <div class="files-grid list-view"> <!-- Всегда списком для удобства -->
+            {% for file in files %}
+            <div class="file-card deleted {% if file.is_folder %}folder{% endif %}">
+                <div class="file-icon">{% if file.is_folder %}<i class="fas fa-folder"></i>{% else %}<i class="fas fa-file"></i>{% endif %}</div>
+                <div class="file-info">
+                    <h3 class="file-name">{{ file.original_filename }}</h3>
+                    <p class="file-meta">Удалил: {{ file.uploader_name }} | {{ format_size(file.file_size) }}</p>
+                </div>
+                <div class="file-actions">
+                    <form action="{{ url_for('groups.restore_group_file', group_id=group.id, file_id=file.id) }}" method="POST" style="display:inline;">
+                        <button class="btn btn-icon btn-success" title="Восстановить"><i class="fas fa-undo"></i></button>
+                    </form>
+                    <form action="{{ url_for('groups.delete_group_file_forever', group_id=group.id, file_id=file.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Удалить навсегда?')">
+                        <button class="btn btn-icon btn-danger" title="Удалить навсегда"><i class="fas fa-times"></i></button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state"><h3>Корзина пуста</h3></div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
