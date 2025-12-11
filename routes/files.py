@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session, send_file, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, send_file, jsonify, abort
 from datetime import datetime
 import os
 import uuid
@@ -8,12 +8,14 @@ import shutil
 
 from config import Config
 from utils import (
-    get_db, safe_filename, login_required, get_file_type, format_size,
+    get_db, safe_filename, login_required, format_size,
     get_user_storage_info, update_user_storage, delete_file_from_disk,
-    delete_folder_contents, move_folder_to_trash, restore_folder_contents
+    delete_folder_contents, move_folder_to_trash, restore_folder_contents,
+    get_file_type_by_content
 )
 
 files_bp = Blueprint('files', __name__)
+
 
 
 @files_bp.route('/dashboard')
@@ -156,7 +158,7 @@ def upload_file():
             os.makedirs(os.path.dirname(full_path), exist_ok=True)
             file.save(full_path)
 
-            file_type = get_file_type(original_filename)
+            file_type = get_file_type_by_content(file, fallback_name=original_filename)
 
             conn.execute('''
                 INSERT INTO files (user_id, filename, original_filename, file_path, file_size, file_type, parent_id)
@@ -213,6 +215,96 @@ def download_file(file_id):
         else:
             flash('Файл не найден на диске', 'error')
             return redirect(url_for('files.dashboard'))
+
+
+@files_bp.route('/preview/<int:file_id>')
+@login_required
+def preview_file(file_id):
+    conn = get_db()
+    file = conn.execute('SELECT * FROM files WHERE id = ?', (file_id,)).fetchone()
+    conn.close()
+
+    # нет файла или это папка
+    if not file or file['is_folder']:
+        abort(404)
+
+    # только картинки
+    if file['file_type'] != 'image':
+        abort(404)
+
+    full_path = os.path.join(Config.UPLOAD_FOLDER, file['file_path'])
+    if not os.path.exists(full_path):
+        abort(404)
+
+    # отдаём файл браузеру как есть
+    return send_file(full_path)
+
+@files_bp.route('/preview_inline/<int:file_id>')
+@login_required
+def preview_inline(file_id):
+    conn = get_db()
+    file = conn.execute('SELECT * FROM files WHERE id = ?', (file_id,)).fetchone()
+    conn.close()
+
+    if not file or file['is_folder']:
+        abort(404)
+
+    full_path = os.path.join(Config.UPLOAD_FOLDER, file['file_path'])
+    if not os.path.exists(full_path):
+        abort(404)
+
+    # По типу выбираем способ отдачи
+    if file['file_type'] == 'image':
+        # можно использовать уже существующий preview, но этот тоже ок
+        return send_file(full_path)
+
+    # PDF — отдать с правильным mimetype
+    if file['file_type'] == 'document' and file['original_filename'].lower().endswith('.pdf'):
+        return send_file(full_path, mimetype='application/pdf')
+
+    # Текст / код — читаем и возвращаем как text/plain
+    if file['file_type'] in ('document', 'code'):
+        with open(full_path, 'r', encoding='utf-8', errors='replace') as f:
+            content = f.read()
+        from flask import Response
+        return Response(content, mimetype='text/plain; charset=utf-8')
+
+    # Остальное пока не поддерживаем
+    abort(415)
+
+
+@files_bp.route('/edit/<int:file_id>', methods=['POST'])
+@login_required
+def edit_file(file_id):
+    new_content = request.form.get('content', '')
+
+    conn = get_db()
+    file = conn.execute('SELECT * FROM files WHERE id = ? AND user_id = ?', (file_id, session['user_id'])).fetchone()
+    if not file or file['is_folder']:
+        conn.close()
+        abort(404)
+
+    full_path = os.path.join(Config.UPLOAD_FOLDER, file['file_path'])
+    if not os.path.exists(full_path):
+        conn.close()
+        abort(404)
+
+    # Разрешаем правку только “текстовых” файлов
+    if file['file_type'] not in ('document', 'code'):
+        conn.close()
+        abort(415)
+
+    # Перезаписываем файл
+    with open(full_path, 'w', encoding='utf-8', errors='replace') as f:
+        f.write(new_content)
+
+    new_size = os.path.getsize(full_path)
+    conn.execute('UPDATE files SET file_size = ? WHERE id = ?', (new_size, file_id))
+    conn.commit()
+    conn.close()
+    update_user_storage(session['user_id'])
+
+    return jsonify({'status': 'ok'})
 
 
 @files_bp.route('/delete/<int:file_id>', methods=['POST'])
@@ -468,3 +560,49 @@ def file_action():
 
     flash(f'Действие выполнено: {count} файл(ов)', 'success')
     return redirect(request.referrer)
+
+@files_bp.route('/search')
+@login_required
+def search_files():
+    q = request.args.get('q', '').strip()
+    ftype = request.args.get('type', 'all')
+    include_trash = request.args.get('include_trash') == '1'
+
+    conn = get_db()
+
+    sql = '''
+        SELECT *
+        FROM files
+        WHERE user_id = ?
+    '''
+    params = [session['user_id']]
+
+    # Фильтр по тексту – только если что-то ввели
+    if q:
+        sql += ' AND (original_filename LIKE ? OR filename LIKE ?)'
+        like = f'%{q}%'
+        params.extend([like, like])
+
+    # Фильтр по типу – если выбран не "Все"
+    if ftype != 'all':
+        sql += ' AND file_type = ?'
+        params.append(ftype)
+
+    # Фильтр по корзине
+    if not include_trash:
+        sql += ' AND is_deleted = 0'
+
+    sql += ' ORDER BY is_folder DESC, original_filename'
+
+    files = conn.execute(sql, params).fetchall()
+    conn.close()
+
+    return render_template(
+        'files/search.html',
+        files=files,
+        q=q,
+        ftype=ftype,
+        include_trash=include_trash,
+        format_size=format_size,
+    )
+

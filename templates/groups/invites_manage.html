@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% block title %}Управление приглашениями - MyCloud{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+  <aside class="sidebar">
+    <h4><i class="fas fa-link"></i> Приглашения</h4>
+    <p class="storage-text">Ссылки для всех ваших групп.</p>
+  </aside>
+
+  <div class="main-content">
+    <div class="breadcrumbs">
+      <a href="{{ url_for('groups.list_groups') }}">Группы</a> / Управление приглашениями
+    </div>
+
+    {% if invites %}
+    <div class="users-table-container">
+      <table class="users-table">
+        <thead>
+          <tr>
+            <th>Группа</th>
+            <th>Ссылка</th>
+            <th>Статус</th>
+            <th>Срок</th>
+            <th>Использования</th>
+            <th>Действия</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for inv in invites %}
+          <tr>
+            <td>{{ inv.group_name }}</td>
+            <td style="max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+              {{ url_for('groups.join_via_link', token=inv.token, _external=True) }}
+            </td>
+            <td>
+              {% if inv.is_active %}
+                <span class="badge bg-success">активно</span>
+              {% else %}
+                <span class="badge bg-secondary">отключено</span>
+              {% endif %}
+            </td>
+            <td>
+              {{ inv.expires_at or 'без ограничений' }}
+            </td>
+            <td>
+              {{ inv.uses }}{% if inv.max_uses %}/{{ inv.max_uses }}{% endif %}
+            </td>
+            <td>
+              <button type="button"
+                      class="btn btn-xs btn-outline-secondary"
+                      onclick="copyText('{{ url_for('groups.join_via_link', token=inv.token, _external=True) }}')">
+                Копировать
+              </button>
+
+              {% if inv.is_active %}
+              <form method="POST"
+                    action="{{ url_for('groups.deactivate_invite', group_id=inv.group_id, invite_id=inv.id) }}"
+                    style="display:inline;"
+                    onsubmit="return confirm('Отключить эту ссылку?');">
+                <button type="submit" class="btn btn-xs btn-outline-danger">
+                  Отключить
+                </button>
+              </form>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <div class="empty-state">
+        <i class="fas fa-link"></i>
+        <h3>Приглашений пока нет</h3>
+        <p>Создайте первую ссылку на странице группы.</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

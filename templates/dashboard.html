@@ -73,7 +73,7 @@
             </div>
         </div>
 
-        <!-- Заголовок и переключатель вида -->
+                <!-- Заголовок и переключатель вида -->
         <div class="files-header">
             <div class="files-header-left">
                 <label class="select-all-wrapper">
@@ -82,14 +82,19 @@
                 </label>
                 <h2>
                     {% if current_folder %}
-                    {{ current_folder.original_filename }}
+                        {{ current_folder.original_filename }}
                     {% else %}
-                    Мои файлы
+                        Мои файлы
                     {% endif %}
                 </h2>
             </div>
 
-            <div style="display: flex; align-items: center;">
+            <div class="files-header-right" style="display:flex; align-items:center; gap:0.75rem;">
+                <!-- Иконка лупы -->
+                <button type="button" class="btn btn-light btn-icon" onclick="toggleSearchPanel()">
+                    <i class="fas fa-search"></i>
+                </button>
+
                 <!-- Переключатель вида -->
                 <div class="view-toggle">
                     <button class="view-btn active" onclick="setView('grid')" title="Сетка">
@@ -103,9 +108,48 @@
             </div>
         </div>
 
+        <!-- Выезжающая панель поиска -->
+        <div id="searchPanel" class="search-panel" style="display:none;">
+            <form method="GET"
+                  action="{{ url_for('files.search_files') }}"
+                  class="search-form-advanced">
+                <div class="search-main-row">
+                    <input type="text"
+                           name="q"
+                           class="form-control"
+                           placeholder="Поиск по имени файла, расширению, типу…"
+                           value="{{ request.args.get('q', '') }}">
+                    <button class="btn btn-primary" type="submit">
+                        <i class="fas fa-search"></i> Найти
+                    </button>
+                </div>
+
+                <div class="search-filters">
+                    <label>
+                        Тип:
+                        <select name="type" class="form-control">
+                            <option value="all">Все</option>
+                            <option value="image">Изображения</option>
+                            <option value="document">Документы</option>
+                            <option value="video">Видео</option>
+                            <option value="audio">Аудио</option>
+                            <option value="archive">Архивы</option>
+                            <option value="code">Код</option>
+                        </select>
+                    </label>
+
+                    <label class="checkbox-inline">
+                        <input type="checkbox" name="include_trash" value="1">
+                        Включая корзину
+                    </label>
+                </div>
+            </form>
+        </div>
+
         <!-- Список файлов -->
         {% if files %}
         <div id="fileContainer" class="files-grid">
+
             {% for file in files %}
             <div class="file-card {% if file.is_folder %}folder{% endif %}" data-id="{{ file.id }}">
                 <!-- Чекбокс выделения -->
@@ -114,25 +158,29 @@
                     <span class="checkmark"></span>
                 </label>
 
-                <div class="file-icon">
+                                <div class="file-icon">
                     {% if file.is_folder %}
-                    <i class="fas fa-folder"></i>
+                        <i class="fas fa-folder"></i>
                     {% elif file.file_type == 'image' %}
-                    <i class="fas fa-image"></i>
+                        <div class="file-thumb">
+                            <img src="{{ url_for('files.preview_file', file_id=file.id) }}"
+                                 alt="{{ file.original_filename }}">
+                        </div>
                     {% elif file.file_type == 'video' %}
-                    <i class="fas fa-video"></i>
+                        <i class="fas fa-video"></i>
                     {% elif file.file_type == 'audio' %}
-                    <i class="fas fa-music"></i>
+                        <i class="fas fa-music"></i>
                     {% elif file.file_type == 'document' %}
-                    <i class="fas fa-file-alt"></i>
+                        <i class="fas fa-file-alt"></i>
                     {% elif file.file_type == 'archive' %}
-                    <i class="fas fa-file-archive"></i>
+                        <i class="fas fa-file-archive"></i>
                     {% elif file.file_type == 'code' %}
-                    <i class="fas fa-code"></i>
+                        <i class="fas fa-code"></i>
                     {% else %}
-                    <i class="fas fa-file"></i>
+                        <i class="fas fa-file"></i>
                     {% endif %}
                 </div>
+
 
                 <div class="file-info">
                     <h3 class="file-name" title="{{ file.original_filename }}">
@@ -152,6 +200,15 @@
                         <i class="fas fa-folder-open"></i>
                     </a>
                     {% endif %}
+
+                    {% if not file.is_folder and file.file_type in ['image', 'document', 'code'] %}
+                    <button class="btn btn-icon" type="button"
+                            title="Быстрый просмотр"
+                            onclick="openQuickPreview({{ file.id }}, '{{ file.original_filename|e }}', '{{ file.file_type }}')">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    {% endif %}
+
                     <a href="{{ url_for('files.download_file', file_id=file.id) }}" class="btn btn-icon" title="Скачать">
                         <i class="fas fa-download"></i>
                     </a>
@@ -173,7 +230,7 @@
             <h3>Папка пуста</h3>
             <p>Загрузите файлы или создайте папку</p>
         </div>
-        {% endif %} <!-- ВОТ ЭТОГО ENDIF НЕ ХВАТАЛО -->
+        {% endif %}
     </div>
 </div>
 
@@ -307,250 +364,36 @@
     <div id="mc_files_container"></div>
 </form>
 
+<!-- Модальное окно быстрого предпросмотра / редактирования -->
+<div class="modal" id="quickPreviewModal">
+    <div class="modal-content" style="max-width: 80vw; max-height: 80vh;">
+       <div class="modal-header">
+    <h2 id="qpTitle" style="font-size: 0.9rem;"></h2>
+    <div style="margin-left:auto; display:flex; gap:0.5rem; align-items:center;">
+        <span id="qpStatus" style="font-size:0.75rem; color:#10b981; display:none;"></span>
+        <button id="qpEditToggle"
+                class="btn btn-secondary btn-sm"
+                type="button"
+                style="display:none;">
+            <i class="fas fa-pen"></i> Редактировать
+        </button>
+        <button id="qpSaveBtn"
+                class="btn btn-primary btn-sm"
+                type="button"
+                style="display:none;">
+            <i class="fas fa-save"></i> Сохранить
+        </button>
+        <button class="modal-close" onclick="closeQuickPreview()">×</button>
+    </div>
+</div>
+
+        <div class="modal-body" style="max-height: 70vh; overflow-y: auto; overflow-x: hidden;">
+    <div id="qpContent" style="min-height: 200px;"></div>
+</div>
+
+
 {% endblock %}
 
 {% block scripts %}
-<script>
-// ==================== ВЫДЕЛЕНИЕ ФАЙЛОВ ====================
-
-function updateSelection() {
-    const checkboxes = document.querySelectorAll('.file-checkbox:checked');
-    const count = checkboxes.length;
-    const bulkActions = document.getElementById('bulkActions');
-    const selectedCount = document.getElementById('selectedCount');
-    const selectAll = document.getElementById('selectAll');
-    const allCheckboxes = document.querySelectorAll('.file-checkbox');
-
-    selectedCount.textContent = count;
-
-    if (count > 0) {
-        bulkActions.style.display = 'flex';
-    } else {
-        bulkActions.style.display = 'none';
-    }
-
-    selectAll.checked = allCheckboxes.length > 0 && count === allCheckboxes.length;
-    selectAll.indeterminate = count > 0 && count < allCheckboxes.length;
-
-    document.querySelectorAll('.file-card').forEach(card => {
-        const checkbox = card.querySelector('.file-checkbox');
-        if (checkbox && checkbox.checked) {
-            card.classList.add('selected');
-        } else {
-            card.classList.remove('selected');
-        }
-    });
-}
-
-function toggleSelectAll() {
-    const selectAll = document.getElementById('selectAll');
-    const checkboxes = document.querySelectorAll('.file-checkbox');
-
-    checkboxes.forEach(checkbox => {
-        checkbox.checked = selectAll.checked;
-    });
-
-    updateSelection();
-}
-
-function clearSelection() {
-    document.querySelectorAll('.file-checkbox').forEach(checkbox => {
-        checkbox.checked = false;
-    });
-    document.getElementById('selectAll').checked = false;
-    updateSelection();
-}
-
-function getSelectedIds() {
-    const checkboxes = document.querySelectorAll('.file-checkbox:checked');
-    return Array.from(checkboxes).map(cb => cb.value);
-}
-
-// ==================== МАССОВЫЕ ОПЕРАЦИИ ====================
-
-function bulkDelete(deleteType) {
-    const ids = getSelectedIds();
-    if (ids.length === 0) {
-        alert('Выберите файлы для удаления');
-        return;
-    }
-
-    const action = deleteType === 'permanent' ? 'удалить навсегда' : 'переместить в корзину';
-    if (!confirm(`Вы уверены, что хотите ${action} ${ids.length} файл(ов)?`)) {
-        return;
-    }
-
-    document.getElementById('bulkDeleteType').value = deleteType;
-
-    const container = document.getElementById('bulkDeleteFiles');
-    container.innerHTML = '';
-
-    ids.forEach(id => {
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = 'file_ids';
-        input.value = id;
-        container.appendChild(input);
-    });
-
-    document.getElementById('bulkDeleteForm').submit();
-}
-
-function bulkDownload() {
-    const ids = getSelectedIds();
-    if (ids.length === 0) {
-        alert('Выберите файлы для скачивания');
-        return;
-    }
-
-    const container = document.getElementById('bulkDownloadFiles');
-    container.innerHTML = '';
-
-    ids.forEach(id => {
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = 'file_ids';
-        input.value = id;
-        container.appendChild(input);
-    });
-
-    document.getElementById('bulkDownloadForm').submit();
-}
-
-// ==================== МОДАЛЬНЫЕ ОКНА ====================
-
-function openRenameModal(fileId, fileName) {
-    document.getElementById('renameForm').action = '/rename/' + fileId;
-    document.getElementById('new_name').value = fileName;
-    document.getElementById('renameModal').classList.add('active');
-}
-
-function openDeleteModal(fileId, fileName) {
-    document.getElementById('deleteForm').action = '/delete/' + fileId;
-    document.getElementById('deleteFileName').textContent = fileName;
-    document.getElementById('deleteModal').classList.add('active');
-}
-
-// Закрытие модальных окон
-document.querySelectorAll('.modal').forEach(modal => {
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            modal.classList.remove('active');
-        }
-    });
-});
-
-// ==================== DRAG & DROP ====================
-
-const uploadArea = document.getElementById('uploadArea');
-const fileInput = document.getElementById('fileInput');
-const fileList = document.getElementById('fileList');
-
-if (uploadArea) {
-    uploadArea.addEventListener('click', () => fileInput.click());
-
-    uploadArea.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        uploadArea.classList.add('dragover');
-    });
-
-    uploadArea.addEventListener('dragleave', () => {
-        uploadArea.classList.remove('dragover');
-    });
-
-    uploadArea.addEventListener('drop', (e) => {
-        e.preventDefault();
-        uploadArea.classList.remove('dragover');
-        fileInput.files = e.dataTransfer.files;
-        updateFileList();
-    });
-}
-
-if (fileInput) {
-    fileInput.addEventListener('change', updateFileList);
-}
-
-function updateFileList() {
-    if (!fileList) return;
-    fileList.innerHTML = '';
-    for (let file of fileInput.files) {
-        const item = document.createElement('div');
-        item.className = 'file-list-item';
-        item.innerHTML = `
-            <i class="fas fa-file"></i>
-            <span>${file.name}</span>
-            <span class="file-size">${formatSize(file.size)}</span>
-        `;
-        fileList.appendChild(item);
-    }
-}
-
-function formatSize(bytes) {
-    const units = ['Б', 'КБ', 'МБ', 'ГБ'];
-    let i = 0;
-    while (bytes >= 1024 && i < units.length - 1) {
-        bytes /= 1024;
-        i++;
-    }
-    return bytes.toFixed(2) + ' ' + units[i];
-}
-    // Открытие модального окна и загрузка папок
-function openMoveModal() {
-    const ids = getSelectedIds();
-    if (ids.length === 0) return alert('Выберите файлы');
-
-    document.getElementById('moveModal').classList.add('active');
-    loadFolders();
-}
-
-// Загрузка списка папок с сервера
-async function loadFolders() {
-    const list = document.getElementById('folderList');
-    try {
-        const response = await fetch('/get_folders_tree');
-        const folders = await response.json();
-
-        list.innerHTML = '';
-
-        if (folders.length === 0) {
-            list.innerHTML = '<p style="font-size: 0.8rem; color: gray; padding: 0.5rem;">Нет других папок</p>';
-            return;
-        }
-
-        // Строим простой список (можно усложнить до дерева, но пока список)
-        folders.forEach(f => {
-            // Не показываем текущую папку как цель (упрощение)
-            // if (f.id == current_folder_id) return;
-
-            const item = document.createElement('label');
-            item.className = 'folder-option';
-            item.innerHTML = `
-                <input type="radio" name="target_folder" value="${f.id}">
-                <span class="folder-icon"><i class="fas fa-folder"></i></span>
-                <span class="folder-name" style="margin-left: ${f.parent_id ? '20px' : '0'}">${f.name}</span>
-            `;
-            list.appendChild(item);
-        });
-    } catch (e) {
-        list.innerHTML = '<p style="color: red;">Ошибка загрузки</p>';
-    }
-}
-
-// Отправка формы
-function submitMoveCopy(action) {
-    const selected = document.querySelector('input[name="target_folder"]:checked');
-    if (!selected) return alert('Выберите папку назначения');
-
-    const targetId = selected.value;
-    const fileIds = getSelectedIds();
-
-    document.getElementById('mc_action').value = action;
-    document.getElementById('mc_target_id').value = targetId;
-
-    const container = document.getElementById('mc_files_container');
-    container.innerHTML = fileIds.map(id => `<input type="hidden" name="file_ids" value="${id}">`).join('');
-
-    document.getElementById('moveCopyForm').submit();
-}
-</script>
+  <script src="{{ url_for('static', filename='js/files.js') }}"></script>
 {% endblock %}

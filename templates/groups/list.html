@@ -5,9 +5,16 @@
 <div class="main-content" style="max-width: 900px; margin: auto;">
     <div class="files-header">
         <h2><i class="fas fa-users"></i> Мои группы</h2>
-        <a href="{{ url_for('groups.create_group') }}" class="btn btn-primary btn-sm">
-            <i class="fas fa-plus"></i> Создать группу
-        </a>
+        <div style="display:flex; gap:0.5rem;">
+            <button type="button"
+                    class="btn btn-secondary btn-sm"
+                    onclick="document.getElementById('allInvitesModal').classList.add('active')">
+                <i class="fas fa-link"></i> Все приглашения
+            </button>
+            <a href="{{ url_for('groups.create_group') }}" class="btn btn-primary btn-sm">
+                <i class="fas fa-plus"></i> Создать группу
+            </a>
+        </div>
     </div>
 
     {% if groups %}
@@ -37,4 +44,77 @@
         </div>
     {% endif %}
 </div>
+
+{# Красивая модалка "Все приглашения" #}
+<div id="allInvitesModal" class="modal invites-modal-root">
+  <div class="invites-modal-card">
+    <div class="invites-modal-header">
+      <div class="invites-modal-title">
+        <i class="fas fa-link"></i>
+        <span>Все приглашения</span>
+      </div>
+      <button class="modal-close"
+              onclick="this.closest('.modal').classList.remove('active')">×</button>
+    </div>
+
+    {% if invites %}
+    <div class="invites-modal-body">
+      {% for inv in invites %}
+      <div class="invite-row">
+        <div class="invite-row-main">
+          <div class="invite-row-top">
+            <span class="invite-group-name">{{ inv.group_name }}</span>
+            <span class="invite-status-pill {{ 'active' if inv.is_active else 'inactive' }}">
+              {{ 'активно' if inv.is_active else 'отключено' }}
+            </span>
+            <span style="font-size:0.72rem; color:var(--gray-500);">
+              {{ 'PIN' if inv.pincode_hash else 'без PIN' }}
+            </span>
+          </div>
+          <div class="invite-row-meta">
+            <span>
+              <i class="fas fa-link"></i>
+              <span class="invite-url">
+                {{ url_for('groups.join_via_link', token=inv.token, _external=True) }}
+              </span>
+            </span>
+            <span>
+              <i class="fas fa-clock"></i>
+              {{ inv.expires_at or 'без ограничений' }}
+            </span>
+            <span>
+              <i class="fas fa-user-check"></i>
+              {{ inv.uses }}{% if inv.max_uses %}/{{ inv.max_uses }}{% endif %}
+            </span>
+          </div>
+        </div>
+
+        <div class="invite-row-actions">
+          <button type="button"
+                  class="btn btn-xs btn-secondary"
+                  onclick="copyText('{{ url_for('groups.join_via_link', token=inv.token, _external=True) }}')">
+            Копировать
+          </button>
+          {% if inv.is_active %}
+          <form method="POST"
+                action="{{ url_for('groups.deactivate_invite', group_id=inv.group_id, invite_id=inv.id) }}"
+                onsubmit="return confirm('Отключить эту ссылку?');">
+            <button type="submit" class="btn btn-xs btn-danger">
+              Отключить
+            </button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="invites-modal-empty">
+      Пока нет созданных ссылок. Создайте их на страницах групп.
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+
 {% endblock %}

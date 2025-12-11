@@ -102,21 +102,26 @@
                     <span class="checkmark"></span>
                 </label>
 
-                <div class="file-icon">
+              <div class="file-icon">
                     {% if file.is_folder %}
-                    <i class="fas fa-folder"></i>
+                        <i class="fas fa-folder"></i>
                     {% elif file.file_type == 'image' %}
-                    <i class="fas fa-image"></i>
+                        <div class="file-thumb">
+                            <img src="{{ url_for('files.preview_file', file_id=file.id) }}"
+                                 alt="{{ file.original_filename }}">
+                        </div>
                     {% elif file.file_type == 'video' %}
-                    <i class="fas fa-video"></i>
+                        <i class="fas fa-video"></i>
                     {% elif file.file_type == 'audio' %}
-                    <i class="fas fa-music"></i>
+                        <i class="fas fa-music"></i>
                     {% elif file.file_type == 'document' %}
-                    <i class="fas fa-file-alt"></i>
+                        <i class="fas fa-file-alt"></i>
                     {% elif file.file_type == 'archive' %}
-                    <i class="fas fa-file-archive"></i>
+                        <i class="fas fa-file-archive"></i>
+                    {% elif file.file_type == 'code' %}
+                        <i class="fas fa-code"></i>
                     {% else %}
-                    <i class="fas fa-file"></i>
+                        <i class="fas fa-file"></i>
                     {% endif %}
                 </div>
 
@@ -170,73 +175,6 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
-function updateSelection() {
-    const checkboxes = document.querySelectorAll('.file-checkbox:checked');
-    const count = checkboxes.length;
-    const bulkActions = document.getElementById('bulkActions');
-    const selectedCount = document.getElementById('selectedCount');
-    const selectAll = document.getElementById('selectAll');
-    const allCheckboxes = document.querySelectorAll('.file-checkbox');
-
-    selectedCount.textContent = count;
-
-    if (count > 0) {
-        bulkActions.style.display = 'flex';
-    } else {
-        bulkActions.style.display = 'none';
-    }
-
-    if (selectAll) {
-        selectAll.checked = allCheckboxes.length > 0 && count === allCheckboxes.length;
-        selectAll.indeterminate = count > 0 && count < allCheckboxes.length;
-    }
-
-    document.querySelectorAll('.file-card').forEach(card => {
-        const checkbox = card.querySelector('.file-checkbox');
-        if (checkbox && checkbox.checked) {
-            card.classList.add('selected');
-        } else {
-            card.classList.remove('selected');
-        }
-    });
-}
-
-function toggleSelectAll() {
-    const selectAll = document.getElementById('selectAll');
-    document.querySelectorAll('.file-checkbox').forEach(cb => cb.checked = selectAll.checked);
-    updateSelection();
-}
-
-function clearSelection() {
-    document.querySelectorAll('.file-checkbox').forEach(cb => cb.checked = false);
-    const selectAll = document.getElementById('selectAll');
-    if (selectAll) selectAll.checked = false;
-    updateSelection();
-}
-
-function getSelectedIds() {
-    const checkboxes = document.querySelectorAll('.file-checkbox:checked');
-    return Array.from(checkboxes).map(cb => cb.value);
-}
-
-function bulkRestore() {
-    const ids = getSelectedIds();
-    if (ids.length === 0) return alert('Выберите файлы');
-
-    const container = document.getElementById('bulkRestoreFiles');
-    container.innerHTML = ids.map(id => `<input type="hidden" name="file_ids" value="${id}">`).join('');
-    document.getElementById('bulkRestoreForm').submit();
-}
-
-function bulkDeletePermanent() {
-    const ids = getSelectedIds();
-    if (ids.length === 0) return alert('Выберите файлы');
-    if (!confirm(`Удалить навсегда ${ids.length} файл(ов)?`)) return;
-
-    const container = document.getElementById('bulkDeleteFiles');
-    container.innerHTML = ids.map(id => `<input type="hidden" name="file_ids" value="${id}">`).join('');
-    document.getElementById('bulkDeleteForm').submit();
-}
-</script>
+  <script src="{{ url_for('static', filename='js/files.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/trash.js') }}"></script>
 {% endblock %}
