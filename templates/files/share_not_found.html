@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block title %}Ссылка не найдена - MyCloud{% endblock %}
+
+{% block content %}
+<div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+    <div style="background: white; padding: 2rem; border-radius: 1rem; box-shadow: 0 20px 60px rgba(0,0,0,0.3); max-width: 500px; width: 100%; text-align: center; margin: 1rem;">
+        <i class="fas fa-ban" style="font-size: 4rem; color: #ef4444; margin-bottom: 1rem; display: block;"></i>
+        <h1 style="font-size: 1.5rem; margin-bottom: 0.5rem;">Ссылка не найдена</h1>
+        <p style="color: #666; margin-bottom: 2rem;">
+            Эта ссылка больше не доступна или была удалена.
+        </p>
+        <a href="{{ url_for('auth.login') }}" class="btn btn-primary" style="display: inline-block; padding: 0.75rem 1.5rem; background: #667eea; color: white; text-decoration: none; border-radius: 0.5rem; font-weight: 500;">
+            <i class="fas fa-arrow-left"></i> Вернуться к логину
+        </a>
+    </div>
+</div>
+{% endblock %}

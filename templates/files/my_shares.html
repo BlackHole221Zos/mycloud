@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+{% block title %}Мои ссылки - MyCloud{% endblock %}
+
+{% block content %}
+<div class="container">
+<div class="files-header" style="margin-bottom: 1rem;">
+  <div class="files-header-left">
+    <h2>Мои ссылки</h2>
+  </div>
+  <div class="files-header-right" style="display:flex; gap:0.5rem; align-items:center;">
+    <form method="get" action="{{ url_for('files.my_shares') }}"
+          class="shares-status-filter">
+      <span>Статус:</span>
+      <select name="status" class="form-control" onchange="this.form.submit()">
+        <option value="all" {% if status_filter == 'all' %}selected{% endif %}>Все</option>
+        <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Только активные</option>
+        <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Неактивные</option>
+      </select>
+    </form>
+
+    <form method="post"
+      action="{{ url_for('files.deactivate_all_shares') }}"
+      onsubmit="return confirm('Удалить все мои ссылки? Это действие нельзя отменить.');">
+  <button type="submit"
+          class="btn btn-warning btn-sm">
+    Удалить все ссылки
+  </button>
+</form>
+  </div>
+</div>
+
+  {% if shares %}
+  <div class="users-table-container" style="padding: 1rem 1.25rem;">
+    <table class="users-table">
+      <thead>
+        <tr>
+          <th>Файл</th>
+          <th>Размер</th>
+          <th>Тип</th>
+          <th>Ссылка</th>
+          <th>Статус</th>
+          <th>Скачивания</th>
+          <th>Ограничения</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in shares %}
+        {# вычисляем статус #}
+        {% set is_expired = s.expires_at and s.expires_at <= now_iso if false else false %}
+        {% set limit_reached = s.max_downloads and s.downloads >= s.max_downloads %}
+        <tr>
+          <td>
+            {{ s.original_filename }}
+          </td>
+          <td>
+            {{ format_size(s.file_size) }}
+          </td>
+          <td>
+            {{ s.file_type or '—' }}
+          </td>
+          <td style="max-width: 260px;">
+  {% set full_url = url_for('files.download_shared_file', token=s.token, _external=True) %}
+  <div class="invite-url"
+       title="{{ full_url }}">
+    {{ full_url }}
+  </div>
+</td>
+
+          <td>
+  {% if not s.is_active %}
+    <span class="badge" style="background:#e5e7eb; color:#4b5563;">Отключена</span>
+  {% elif s.is_expired %}
+    <span class="badge" style="background:#fee2e2; color:#b91c1c;">Истекла</span>
+  {% elif s.limit_reached %}
+    <span class="badge" style="background:#fee2e2; color:#b91c1c;">Лимит</span>
+  {% elif s.is_effective_active %}
+    <span class="badge" style="background:#dcfce7; color:#166534;">Активна</span>
+  {% else %}
+    <span class="badge" style="background:#e5e7eb; color:#4b5563;">Неактивна</span>
+  {% endif %}
+</td>
+
+          <td>
+            {% if s.max_downloads %}
+              {{ s.downloads or 0 }} / {{ s.max_downloads }}
+            {% else %}
+              {{ s.downloads or 0 }}
+            {% endif %}
+          </td>
+          <td>
+          <td>
+  {% if s.expires_at_dt %}
+    до {{ s.expires_at_dt.date() }}
+  {% else %}
+    без срока
+  {% endif %}
+</td>
+
+<td>
+  <div style="display:flex; gap:0.35rem; justify-content:flex-end; flex-wrap:wrap;">
+    <button type="button"
+            class="btn btn-secondary btn-sm"
+            onclick="copyShareUrl('{{ url_for('files.download_shared_file', token=s.token, _external=True) }}')">
+      Копировать
+    </button>
+
+    <a href="{{ url_for('files.download_shared_file', token=s.token) }}"
+       class="btn btn-secondary btn-sm"
+       target="_blank"
+       rel="noopener"
+       title="Открыть страницу скачивания как гость">
+      Открыть
+    </a>
+
+    {% if s.is_effective_active %}
+    <form action="{{ url_for('files.deactivate_share', share_id=s.id) }}"
+          method="POST"
+          style="display:inline;">
+      <button type="submit"
+              class="btn btn-danger btn-sm"
+              onclick="return confirm('Отключить эту ссылку?');">
+        Отключить
+      </button>
+    </form>
+    {% endif %}
+  </div>
+</td>
+
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <h3>У вас пока нет ссылок</h3>
+    <p>Создайте ссылку на файл на странице «Мои файлы».</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function copyShareUrl(url) {
+    navigator.clipboard.writeText(url)
+      .then(() => {
+        alert('Ссылка скопирована в буфер обмена');
+      })
+      .catch(err => {
+        console.error(err);
+        alert('Не удалось скопировать ссылку');
+      });
+  }
+</script>
+{% endblock %}

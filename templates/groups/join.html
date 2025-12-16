@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block title %}Приглашение в группу{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card" style="text-align: center;">
+        <div class="auth-header">
+            <div class="auth-logo" style="background: var(--primary); color: white;">
+                <i class="fas fa-envelope-open-text"></i>
+            </div>
+            <h1>Приглашение</h1>
+            <p>Вас приглашают вступить в группу:</p>
+            <h2 style="color: var(--primary); margin: 0.5rem 0;">{{ group.group_name }}</h2>
+        </div>
+
+        <p style="margin-bottom: 1.5rem; color: var(--gray-500);">
+            Хотите присоединиться?
+        </p>
+
+        <form method="POST">
+            {% if group.pincode_hash %}
+            <div class="form-group" style="margin-bottom: 1rem; text-align:left;">
+                <label for="pincode">ПИН-код</label>
+                <input type="password"
+                       id="pincode"
+                       name="pincode"
+                       class="form-control"
+                       placeholder="Введите ПИН-код"
+                       required>
+            </div>
+            {% endif %}
+
+            <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 1rem;">
+                <a href="{{ url_for('groups.join_via_link', token=group.token, action='decline') }}"
+                   class="btn btn-secondary btn-block">
+                    Отклонить
+                </a>
+
+                <button type="submit" class="btn btn-primary btn-block">
+                    Принять
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
