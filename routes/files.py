@@ -22,22 +22,48 @@ files_bp = Blueprint('files', __name__)
 @files_bp.route('/dashboard/<int:folder_id>')
 @login_required
 def dashboard(folder_id=None):
+    q = request.args.get('q', '').strip()
+    ftype = request.args.get('type', 'all')
+    include_trash = request.args.get('include_trash') == '1'
+
     conn = get_db()
 
-    if folder_id:
-        files = conn.execute('''
-            SELECT * FROM files 
-            WHERE user_id = ? AND parent_id = ? AND is_deleted = 0
-            ORDER BY is_folder DESC, original_filename
-        ''', (session['user_id'], folder_id)).fetchall()
+    sql = '''
+        SELECT *
+        FROM files
+        WHERE user_id = ?
+    '''
+    params = [session['user_id']]
 
+    # ограничение по папке
+    if folder_id:
+        sql += ' AND parent_id = ?'
+        params.append(folder_id)
+    else:
+        sql += ' AND parent_id IS NULL'
+
+    # корзина
+    if not include_trash:
+        sql += ' AND is_deleted = 0'
+
+    # текстовый поиск
+    if q:
+        sql += ' AND (original_filename LIKE ? OR filename LIKE ?)'
+        like = f'%{q}%'
+        params.extend([like, like])
+
+    # фильтр по типу
+    if ftype != 'all':
+        sql += ' AND file_type = ?'
+        params.append(ftype)
+
+    sql += ' ORDER BY is_folder DESC, original_filename'
+
+    files = conn.execute(sql, params).fetchall()
+
+    if folder_id:
         current_folder = conn.execute('SELECT * FROM files WHERE id = ?', (folder_id,)).fetchone()
     else:
-        files = conn.execute('''
-            SELECT * FROM files 
-            WHERE user_id = ? AND parent_id IS NULL AND is_deleted = 0
-            ORDER BY is_folder DESC, original_filename
-        ''', (session['user_id'],)).fetchall()
         current_folder = None
 
     breadcrumbs = []
@@ -55,13 +81,19 @@ def dashboard(folder_id=None):
 
     storage_info = get_user_storage_info(session['user_id'])
 
-    return render_template('dashboard.html',
-                           files=files,
-                           current_folder=current_folder,
-                           folder_id=folder_id,
-                           breadcrumbs=breadcrumbs,
-                           storage_info=storage_info,
-                           format_size=format_size)
+    return render_template(
+        'dashboard.html',
+        files=files,
+        current_folder=current_folder,
+        folder_id=folder_id,
+        breadcrumbs=breadcrumbs,
+        storage_info=storage_info,
+        format_size=format_size,
+        q=q,
+        ftype=ftype,
+        include_trash=include_trash,
+    )
+
 
 
 @files_bp.route('/create_folder', methods=['POST'])
@@ -561,50 +593,8 @@ def file_action():
     flash(f'Действие выполнено: {count} файл(ов)', 'success')
     return redirect(request.referrer)
 
-@files_bp.route('/search')
-@login_required
-def search_files():
-    q = request.args.get('q', '').strip()
-    ftype = request.args.get('type', 'all')
-    include_trash = request.args.get('include_trash') == '1'
 
-    conn = get_db()
 
-    sql = '''
-        SELECT *
-        FROM files
-        WHERE user_id = ?
-    '''
-    params = [session['user_id']]
-
-    # Фильтр по тексту – только если что-то ввели
-    if q:
-        sql += ' AND (original_filename LIKE ? OR filename LIKE ?)'
-        like = f'%{q}%'
-        params.extend([like, like])
-
-    # Фильтр по типу – если выбран не "Все"
-    if ftype != 'all':
-        sql += ' AND file_type = ?'
-        params.append(ftype)
-
-    # Фильтр по корзине
-    if not include_trash:
-        sql += ' AND is_deleted = 0'
-
-    sql += ' ORDER BY is_folder DESC, original_filename'
-
-    files = conn.execute(sql, params).fetchall()
-    conn.close()
-
-    return render_template(
-        'files/search.html',
-        files=files,
-        q=q,
-        ftype=ftype,
-        include_trash=include_trash,
-        format_size=format_size,
-    )
 
 
 # ==================== ПРЯМЫЕ ССЫЛКИ НА ФАЙЛЫ ====================

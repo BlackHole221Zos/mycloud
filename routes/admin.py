@@ -7,11 +7,10 @@ from config import Config
 from utils import (
     get_db, admin_required, safe_filename, get_file_type, format_size,
     get_user_storage_info, update_user_storage, get_user_folder,
-    delete_file_from_disk, delete_folder_contents
+    delete_file_from_disk, delete_folder_contents,  cleanup_orphan_files,
 )
 
 admin_bp = Blueprint('admin', __name__)
-
 
 @admin_bp.route('/admin')
 @admin_required
@@ -26,9 +25,30 @@ def admin_panel():
         GROUP BY u.id
         ORDER BY u.created_at DESC
     ''').fetchall()
+
+    groups = conn.execute('''
+        SELECT g.*,
+               u.username AS owner_name,
+               COALESCE(SUM(CASE WHEN gf.is_folder = 0 AND gf.is_deleted = 0 THEN gf.file_size ELSE 0 END), 0) AS used_size,
+               COUNT(DISTINCT gm.user_id) AS members_count
+        FROM groups g
+        LEFT JOIN users u ON g.owner_id = u.id
+        LEFT JOIN group_files gf ON g.id = gf.group_id
+        LEFT JOIN group_members gm ON g.id = gm.group_id
+        GROUP BY g.id
+        ORDER BY g.created_at DESC
+    ''').fetchall()
+
     conn.close()
 
-    return render_template('admin.html', users=users, format_size=format_size)
+    return render_template(
+        'admin.html',
+        users=users,
+        groups=groups,
+        format_size=format_size
+    )
+
+
 
 
 @admin_bp.route('/admin/download_db')
@@ -201,3 +221,19 @@ def admin_delete_file(file_id):
 
     flash('Файл удалён', 'success')
     return redirect(url_for('admin.admin_user_files', user_id=user_id, folder_id=parent_id))
+
+@admin_bp.route('/admin/cleanup_orphans', methods=['POST'])
+@admin_required
+def admin_cleanup_orphans():
+    removed_personal, removed_group, affected_users = cleanup_orphan_files()
+
+    # Пересчёт квоты только тем, кого задели
+    for uid in affected_users:
+        update_user_storage(uid)
+
+    flash(
+        f'Очистка завершена. Удалено личных файлов: {removed_personal}, '
+        f'групповых файлов: {removed_group}.',
+        'success'
+    )
+    return redirect(url_for('admin.admin_panel'))

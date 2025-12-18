@@ -285,31 +285,55 @@ def view_group(group_id, folder_id=None):
         flash('Вы не являетесь участником этой группы.', 'error')
         return redirect(url_for('groups.list_groups'))
 
+    # Новое: параметры поиска / фильтров
+    q = request.args.get('q', '').strip()
+    ftype = request.args.get('type', 'all')
+    include_trash = request.args.get('include_trash') == '1'
+
     conn = get_db()
     group = conn.execute('SELECT * FROM groups WHERE id = ?', (group_id,)).fetchone()
 
-    query = '''
+    base_sql = '''
         SELECT gf.*, u.username as uploader_name
         FROM group_files gf
         JOIN users u ON gf.uploader_id = u.id
-        WHERE gf.group_id = ? AND gf.is_deleted = 0 AND {}
-        ORDER BY gf.is_folder DESC, gf.original_filename
+        WHERE gf.group_id = ?
     '''
-    params = (group_id,)
+    params = [group_id]
 
+    # папка
     if folder_id:
-        query, params = query.format("gf.parent_id = ?"), params + (folder_id,)
+        base_sql += ' AND gf.parent_id = ?'
+        params.append(folder_id)
         current_folder = conn.execute('SELECT * FROM group_files WHERE id = ?', (folder_id,)).fetchone()
     else:
-        query, current_folder = query.format("gf.parent_id IS NULL"), None
+        base_sql += ' AND gf.parent_id IS NULL'
+        current_folder = None
 
-    files = conn.execute(query, params).fetchall()
+    # корзина
+    if not include_trash:
+        base_sql += ' AND gf.is_deleted = 0'
+
+    # текстовый поиск
+    if q:
+        base_sql += ' AND (gf.original_filename LIKE ? OR gf.filename LIKE ?)'
+        like = f'%{q}%'
+        params.extend([like, like])
+
+    # фильтр по типу
+    if ftype != 'all':
+        base_sql += ' AND gf.file_type = ?'
+        params.append(ftype)
+
+    base_sql += ' ORDER BY gf.is_folder DESC, gf.original_filename'
+
+    files = conn.execute(base_sql, params).fetchall()
+
     members = conn.execute(
         'SELECT u.id, u.username FROM users u JOIN group_members gm ON u.id = gm.user_id WHERE gm.group_id = ?',
         (group_id,)
     ).fetchall()
 
-    # НОВОЕ: выбираем инвайты этой группы
     invites = conn.execute(
         '''
         SELECT id, token, uses, max_uses, expires_at, is_active, pincode_hash
@@ -332,8 +356,12 @@ def view_group(group_id, folder_id=None):
         current_folder=current_folder,
         format_size=format_size,
         storage_info=storage_info,
-        invites=invites  # <‑‑ добавили
+        invites=invites,
+        q=q,
+        ftype=ftype,
+        include_trash=include_trash,
     )
+
 
 
 

@@ -326,3 +326,46 @@ def restore_folder_contents(conn, folder_id, table_name='files'):
         )
         if item['is_folder']:
             restore_folder_contents(conn, item['id'], table_name)
+
+def cleanup_orphan_files():
+    """
+    Удаляет из БД записи файлов, для которых нет файла на диске.
+    Чистит:
+      - личные файлы (files, is_folder=0)
+      - групповые файлы (group_files, is_folder=0)
+    Возвращает (removed_personal, removed_group, affected_user_ids).
+    """
+    conn = get_db()
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    removed_personal = 0
+    removed_group = 0
+    affected_users = set()
+
+    # Личные файлы
+    cursor.execute(
+        'SELECT id, user_id, file_path FROM files WHERE is_folder = 0'
+    )
+    for row in cursor.fetchall():
+        full_path = os.path.join(Config.UPLOAD_FOLDER, row['file_path'])
+        if not os.path.exists(full_path):
+            cursor.execute('DELETE FROM files WHERE id = ?', (row['id'],))
+            removed_personal += 1
+            affected_users.add(row['user_id'])
+
+    # Групповые файлы
+    cursor.execute(
+        'SELECT id, file_path FROM group_files WHERE is_folder = 0'
+    )
+    for row in cursor.fetchall():
+        full_path = os.path.join(Config.UPLOAD_FOLDER, row['file_path'])
+        if not os.path.exists(full_path):
+            cursor.execute('DELETE FROM group_files WHERE id = ?', (row['id'],))
+            removed_group += 1
+
+    conn.commit()
+    conn.close()
+
+    # Вернём список уникальных user_id, чтобы снаружи пересчитать storage_used
+    return removed_personal, removed_group, list(affected_users)

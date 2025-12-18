@@ -111,43 +111,46 @@
             </div>
         </div>
 
-        <!-- Выезжающая панель поиска -->
-        <div id="searchPanel" class="search-panel" style="display:none;">
-            <form method="GET"
-                  action="{{ url_for('files.search_files') }}"
-                  class="search-form-advanced">
-                <div class="search-main-row">
-                    <input type="text"
-                           name="q"
-                           class="form-control"
-                           placeholder="Поиск по имени файла, расширению, типу…"
-                           value="{{ request.args.get('q', '') }}">
-                    <button class="btn btn-primary" type="submit">
-                        <i class="fas fa-search"></i> Найти
-                    </button>
-                </div>
+       <!-- Выезжающая панель поиска -->
+<div id="searchPanel" class="search-panel" style="display:none;">
+<form method="GET"
+      action="{{ url_for('files.dashboard', folder_id=folder_id) }}"
+      class="search-form-advanced">
 
-                <div class="search-filters">
-                    <label>
-                        Тип:
-                        <select name="type" class="form-control">
-                            <option value="all">Все</option>
-                            <option value="image">Изображения</option>
-                            <option value="document">Документы</option>
-                            <option value="video">Видео</option>
-                            <option value="audio">Аудио</option>
-                            <option value="archive">Архивы</option>
-                            <option value="code">Код</option>
-                        </select>
-                    </label>
-
-                    <label class="checkbox-inline">
-                        <input type="checkbox" name="include_trash" value="1">
-                        Включая корзину
-                    </label>
-                </div>
-            </form>
+        <div class="search-main-row">
+            <input type="text"
+                   name="q"
+                   class="form-control"
+                   placeholder="Поиск по имени файла, расширению, типу…"
+                   value="{{ q or '' }}">
+            <button class="btn btn-primary" type="submit">
+                <i class="fas fa-search"></i> Найти
+            </button>
         </div>
+
+        <div class="search-filters">
+            <label>
+                Тип:
+                <select name="type" class="form-control">
+                    <option value="all"      {% if ftype == 'all' %}selected{% endif %}>Все</option>
+                    <option value="image"    {% if ftype == 'image' %}selected{% endif %}>Изображения</option>
+                    <option value="document" {% if ftype == 'document' %}selected{% endif %}>Документы</option>
+                    <option value="video"    {% if ftype == 'video' %}selected{% endif %}>Видео</option>
+                    <option value="audio"    {% if ftype == 'audio' %}selected{% endif %}>Аудио</option>
+                    <option value="archive"  {% if ftype == 'archive' %}selected{% endif %}>Архивы</option>
+                    <option value="code"     {% if ftype == 'code' %}selected{% endif %}>Код</option>
+                </select>
+            </label>
+
+            <label class="checkbox-inline">
+                <input type="checkbox" name="include_trash" value="1"
+                       {% if include_trash %}checked{% endif %}>
+                Включая корзину
+            </label>
+        </div>
+    </form>
+</div>
+
 
         <!-- Список файлов -->
         {% if files %}
