@@ -553,16 +553,16 @@ body {
 /* ==================== СЕТКА ФАЙЛОВ ==================== */
 .files-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); /* как было */
+    gap: 0.8rem; /* чуть плотнее, чем 1rem */
 }
 
 /* ==================== КАРТОЧКА ФАЙЛА (Плитка) ==================== */
 .file-card {
     background: white;
-    border: 2px solid var(--gray-200);
-    border-radius: var(--radius);
-    padding: 1.25rem;
+    border: 1px solid var(--gray-200);
+    border-radius: 12px;
+    padding: 1.1rem 0.9rem;   /* почти как 1.25, но слегка меньше */
     transition: all 0.2s ease;
     position: relative;
     display: flex;
@@ -570,7 +570,6 @@ body {
     align-items: center;
     text-align: center;
 
-    /* 👇 ИСПРАВЛЕНИЕ ПЕРЕПОЛНЕНИЯ 👇 */
     overflow: hidden;
     max-width: 100%;
 }
@@ -578,17 +577,37 @@ body {
 .file-card:hover {
     border-color: var(--primary);
     box-shadow: var(--shadow-lg);
-    transform: translateY(-4px);
+    transform: translateY(-3px);
 }
 
-.file-card.selected {
-    background: rgba(99, 102, 241, 0.1);
-    border-color: var(--primary);
+/* Иконка и текст крупнее, чтобы не разваливались кнопки */
+.file-icon {
+    width: 56px;
+    height: 56px;
+    margin-bottom: 0.6rem;
 }
 
-.file-card.deleted {
-    opacity: 0.8;
+.file-name {
+    font-size: 0.85rem;
+    line-height: 1.3;
 }
+
+.file-meta {
+    font-size: 0.72rem;
+}
+
+/* Кнопкам даём нормальный размер */
+.file-actions {
+    margin-top: 0.5rem;
+    gap: 0.4rem;
+}
+
+.file-actions .btn-icon {
+    width: 34px;
+    height: 34px;
+    font-size: 0.8rem;
+}
+
 
 /* ==================== ЧЕКБОКС НА КАРТОЧКЕ ==================== */
 .file-checkbox-wrapper {
@@ -684,7 +703,7 @@ body {
     margin-bottom: 0.75rem;
     background: var(--gray-100);
     border-radius: var(--radius);
-    overflow: hidden; /* важно для превью */
+    overflow: hidden;
 }
 
 /* Иконки по умолчанию */
@@ -693,19 +712,18 @@ body {
     color: var(--primary);
 }
 
-/* Папка */
-.file-card.folder .file-icon {
-    color: #fbbf24;
-    background: #fef3c7;
-}
 
-/* Цвета для разных типов файлов */
-.file-icon .fa-image { color: #ec4899; }
-.file-icon .fa-video { color: #8b5cf6; }
-.file-icon .fa-music { color: #06b6d4; }
-.file-icon .fa-file-alt { color: #3b82f6; }
-.file-icon .fa-file-archive { color: #f59e0b; }
-.file-icon .fa-code { color: #10b981; }
+/* Цвета для разных типов файлов (новые классы) */
+.file-icon-pdf      { color: #d93025; }
+.file-icon-word     { color: #185abc; }
+.file-icon-excel    { color: #137333; }
+.file-icon-ppt      { color: #b06000; }
+.file-icon-doc      { color: #3b82f6; }
+.file-icon-video    { color: #8b5cf6; }
+.file-icon-audio    { color: #06b6d4; }
+.file-icon-archive  { color: #f59e0b; }
+.file-icon-code     { color: #10b981; }
+.file-icon-other    { color: #6b7280; }
 
 /* Превью-контейнер и картинка */
 .file-thumb {
@@ -715,12 +733,16 @@ body {
     overflow: hidden;
 }
 
-.file-thumb img {
+.file-thumb img,
+.file-thumb video {
     width: 100%;
     height: 100%;
     object-fit: cover;
     display: block;
 }
+
+
+
 
 /* ==================== ИНФОРМАЦИЯ О ФАЙЛЕ ==================== */
 .file-info {
@@ -1751,10 +1773,6 @@ body.dark-mode .file-card:hover {
 
 body.dark-mode .file-icon {
     background-color: var(--bg-body);
-}
-
-body.dark-mode .file-card.folder .file-icon {
-    background-color: rgba(251, 191, 36, 0.1);
 }
 
 body.dark-mode .users-table th,

@@ -163,29 +163,56 @@
                     <input type="checkbox" class="file-checkbox" value="{{ file.id }}" onchange="updateSelection()">
                     <span class="checkmark"></span>
                 </label>
+<div class="file-icon">
+    {% if file.is_folder %}
+        <i class="fas fa-folder folder-icon"></i>
 
-                <div class="file-icon">
-                    {% if file.is_folder %}
-                        <i class="fas fa-folder"></i>
-                    {% elif file.file_type == 'image' %}
-                        <div class="file-thumb">
-                            <img src="{{ url_for('files.preview_file', file_id=file.id) }}"
-                                 alt="{{ file.original_filename }}">
-                        </div>
-                    {% elif file.file_type == 'video' %}
-                        <i class="fas fa-video"></i>
-                    {% elif file.file_type == 'audio' %}
-                        <i class="fas fa-music"></i>
-                    {% elif file.file_type == 'document' %}
-                        <i class="fas fa-file-alt"></i>
-                    {% elif file.file_type == 'archive' %}
-                        <i class="fas fa-file-archive"></i>
-                    {% elif file.file_type == 'code' %}
-                        <i class="fas fa-code"></i>
-                    {% else %}
-                        <i class="fas fa-file"></i>
-                    {% endif %}
-                </div>
+    {% elif file.file_type == 'image' %}
+        <div class="file-thumb">
+            <img src="{{ url_for('files.preview_file', file_id=file.id) }}"
+                 alt="{{ file.original_filename }}">
+        </div>
+
+    {% elif file.file_type == 'video' %}
+        <div class="file-thumb">
+            <video
+                src="{{ url_for('files.download_file', file_id=file.id) }}"
+                muted
+                preload="metadata"
+                poster="{{ url_for('static', filename='img/video-placeholder.jpg') }}">
+            </video>
+        </div>
+
+    {% elif file.file_type == 'audio' %}
+        <i class="fas fa-file-audio file-icon-audio"></i>
+</div>
+
+
+    {% elif file.file_type == 'document' %}
+        {% set lower = file.original_filename.lower() %}
+        {% if lower.endswith('.pdf') %}
+            <i class="fas fa-file-pdf file-icon-pdf"></i>
+        {% elif lower.endswith('.doc') or lower.endswith('.docx') %}
+            <i class="fas fa-file-word file-icon-word"></i>
+        {% elif lower.endswith('.xls') or lower.endswith('.xlsx') %}
+            <i class="fas fa-file-excel file-icon-excel"></i>
+        {% elif lower.endswith('.ppt') or lower.endswith('.pptx') %}
+            <i class="fas fa-file-powerpoint file-icon-ppt"></i>
+        {% else %}
+            <i class="fas fa-file-alt file-icon-doc"></i>
+        {% endif %}
+
+    {% elif file.file_type == 'archive' %}
+        <i class="fas fa-file-archive file-icon-archive"></i>
+
+    {% elif file.file_type == 'code' %}
+        <i class="fas fa-file-code file-icon-code"></i>
+
+    {% else %}
+        <i class="fas fa-file file-icon-other"></i>
+    {% endif %}
+</div>
+
 
                 <div class="file-info">
                     <h3 class="file-name" title="{{ file.original_filename }}">
